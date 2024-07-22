@@ -4,7 +4,7 @@ from .models import (
     Contact,
     Projects
 )
-from .tic_tac_toe_new import TicTacToe
+from .tic_tac_toe import TicTacToe, MoveIsTaken
 from django.views.generic import ListView
 from django.views import View
 from django.shortcuts import render
@@ -45,20 +45,24 @@ class TicTacToeBoard(View):
         return JsonResponse({'board': game.board})
     
     def post(self, request):
-        # TODO add try except and get for error
-        board = request.session.get('board')
-        if board is None:
-            raise ValueError('Game not found')
-        
-        game = TicTacToe(board=board)
-        body = json.loads(request.body)
-        if body == 'isCompMove':
-            response = game.comp_move
-        else:
-            row = int(body['row'])
-            col = int(body['col'])
-            response = game.user_move(row, col)
-        
-        request.session['board'] = game.board
-        return JsonResponse({'board': game.board})
+        try:
+            board = request.session.get('board')
+            if board is None:
+                raise ValueError('Game not found')
+            
+            game = TicTacToe(board=board)
+            body = json.loads(request.body)
+            if body == 'compMove':
+                response = game.comp_move
+            else:
+                row = int(body['row'])
+                col = int(body['col'])
+                response = game.user_move(row, col)
+
+            winner = game.victory_for()
+            request.session['board'] = game.board
+            return JsonResponse({'board': game.board, 'winner': winner})
+        except MoveIsTaken as e:
+            response = {'error': str(e)}
+            return JsonResponse(response, status=400)
         

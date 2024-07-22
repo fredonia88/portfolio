@@ -7,7 +7,7 @@
 
 {% block content %}
 <title>Tic Tac Toe</title>
-<script src="{% static 'js/tictactoe_new.js' %}"></script>
+<script src="{% static 'js/tictactoe.js' %}"></script>
 <script>
     var startUrl = "{% url 'tictactoe_board' %}";
     var moveUrl = "{% url 'tictactoe_board' %}";
@@ -21,6 +21,7 @@
     <table class="center" id="board" border="1">
         
     </table>
+    <div id="winner-message" class="message"></div>
 </body>
 
 {% endblock %}

@@ -41,7 +41,7 @@ body {
     color: green !important;
 }
 
-.navbar .nav-link.vertical-line {
+/*.navbar .nav-link.vertical-line {
     position: relative;
     padding-right: 15px;
 }
@@ -53,7 +53,7 @@ body {
     top: 0;
     height: 100%;
     border-right: 2px solid green;
-}
+}*/
 
 table.center {
     border-collapse: collapse;
@@ -78,10 +78,18 @@ td {
     padding: 10px 20px;
     font-size: 28px;
     cursor: pointer;
+    text-decoration: underline;
 }
 
 .button-container {
     display: flex;
     justify-content: center;
     margin: 20px 0;
+}
+
+.message {
+    margin-top: 20px;
+    font-size: 28px;
+    text-align: center;
+    color: green;
 }
