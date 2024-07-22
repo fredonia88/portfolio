@@ -5,8 +5,11 @@
   <link rel="stylesheet", type="text/css", href="{% static 'website/style.css' %}">
 </head>
 
+{% block title %}
+{{ title }}
+{% endblock %}
+
 {% block content %}
-<title>Tic Tac Toe</title>
 <script src="{% static 'js/tictactoe.js' %}"></script>
 <script>
     var startUrl = "{% url 'tictactoe_board' %}";
