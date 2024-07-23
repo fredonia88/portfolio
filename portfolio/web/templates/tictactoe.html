@@ -21,10 +21,20 @@
     <div class="button-container">
         <button class="btn" id="start-game">Start game</button>
     </div>
-    <table class="center" id="board" border="1">
-        
-    </table>
+    <div class="board-container">
+        <table class="center" id="board" border="1"></table>
+    </div>
     <div id="winner-message" class="message"></div>
+
+    <div id="averages" class="center-stats">
+        <h3>All-time averages</h3>
+        <p>Total games played: {{ games_played }}</p>
+        <p>User wins: {{ user_wins }}</p>
+        <p>Computer wins: {{ comp_wins }}</p>
+        <p>Ties: {{ ties }}</p>
+        <p>User win rate: {{ user_win_rate }}</p>
+        <p>Computer win rate: {{ comp_win_rate }}</p>
+    </div>
 </body>
 
 {% endblock %}

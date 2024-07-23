@@ -41,19 +41,10 @@ body {
     color: green !important;
 }
 
-/*.navbar .nav-link.vertical-line {
-    position: relative;
-    padding-right: 15px;
+.board-container {
+    text-align: center;
+    min-height: 300px;
 }
-
-.navbar .nav-link.vertical-line::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
-    height: 100%;
-    border-right: 2px solid green;
-}*/
 
 table.center {
     border-collapse: collapse;
@@ -84,7 +75,7 @@ td {
 .button-container {
     display: flex;
     justify-content: center;
-    margin: 20px 0;
+    margin: 20px;
 }
 
 .message {
@@ -92,4 +83,16 @@ td {
     font-size: 28px;
     text-align: center;
     color: green;
+    min-height: 75px;
+}
+
+.center-stats {
+    text-align: center;
+    margin-top: 20px;
+    color: green;
+}
+
+h3 {
+    color: green;
+    text-decoration: underline;
 }
