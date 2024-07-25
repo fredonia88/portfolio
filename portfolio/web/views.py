@@ -4,7 +4,6 @@ from .tic_tac_toe import TicTacToe, MoveIsTaken
 from django.views import View
 from django.shortcuts import render
 from django.http import JsonResponse
-from django.db.models import Sum
 
 class HomeView(View):
     template_name = 'home.html'
