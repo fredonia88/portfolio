@@ -60,11 +60,11 @@ class TicTacToeView(View):
     def get(self, request):
 
         games_played = TicTacToeResult.objects.count()
-        user_wins = TicTacToeResult.objects.filter(winner='O').count()
-        comp_wins = TicTacToeResult.objects.filter(winner='X').count()
+        user_wins = TicTacToeResult.objects.filter(winner='X').count()
+        comp_wins = TicTacToeResult.objects.filter(winner='O').count()
         ties = TicTacToeResult.objects.filter(winner='Tie').count()
-        user_win_rate = str(0.0 if games_played == 0 else user_wins / games_played) + '%'
-        comp_win_rate = str(0.0 if games_played == 0 else comp_wins / games_played) + '%'
+        user_win_rate = str(0.0 if games_played == 0 else round((user_wins / games_played) * 100, 1)) + '%'
+        comp_win_rate = str(0.0 if games_played == 0 else round((comp_wins / games_played) * 100, 1)) + '%'
 
         context = {
             'title': 'Tic Tac Toe',
@@ -93,13 +93,13 @@ class TicTacToeBoardView(View):
 
             body = json.loads(request.body)
             if body == 'compMove':
-                game.comp_move
+                game.comp_move()
             else:
                 row = int(body['row'])
                 col = int(body['col'])
                 game.user_move(row, col)
 
-            winner = game.victory_for()
+            winner = game.victory_for(game.board)
             if winner: 
                 TicTacToeResult.objects.create(
                     winner = winner

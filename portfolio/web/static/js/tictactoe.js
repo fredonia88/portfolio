@@ -59,9 +59,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 updateBoard(data.board);
                 if (data.winner) {
-                    console.log('winner!', data.winner);
-                    messageDiv.textContent = `${data.winner} wins!`;
-                    gamePaused=true;
+                    if (data.winner === 'Tie') {
+                        messageDiv.textContent = `${data.winner}!`;
+                    } else {
+                        messageDiv.textContent = `${data.winner} wins!`;
+                    }
                     return;
                 }
 
@@ -94,9 +96,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 updateBoard(data.board, data.winner);
                 if (data.winner) {
-                    console.log('winner!', data.winner);
-                    messageDiv.textContent = `${data.winner} wins!`;
-                    gamePaused=true;
+                    if (data.winner === 'Tie') {
+                        messageDiv.textContent = `${data.winner}!`;
+                    } else {
+                        messageDiv.textContent = `${data.winner} wins!`;
+                    }
                     return;
                 }
             }
