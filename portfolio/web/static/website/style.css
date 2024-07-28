@@ -12,11 +12,6 @@ p {
     color: green;
 }
 
-body {
-    font-family: 'Fira Code';
-    font-size: 22px;
-}
-
 .navbar.navbar-expand-lg {
     background-color: black;
     border-bottom: 2px solid green;
@@ -31,28 +26,49 @@ body {
     color: green !important;
 }
 
+.nav-custom:hover {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
 .dropdown-item {
     background-color: black;
     color: green !important;
 }
 
-.dropdown-divider hr {
-    background-color: black;
-    color: green !important;
+.dropdown:hover {
+    background-color: transparent !important;
+    color: inherit !important;
 }
 
-.navbar .nav-link.vertical-line {
-    position: relative;
-    padding-right: 15px;
+h3 {
+    color: green;
+    text-decoration: underline;
 }
 
-.navbar .nav-link.vertical-line::after {
-    content: '';
-    position: absolute;
-    right: 0;
-    top: 0;
+body {
+    font-family: 'Fira Code';
+    font-size: 22px;
+    align-items: center;
+}
+
+.row {
+    padding: 30px;
+    text-align: center;
     height: 100%;
-    border-right: 2px solid green;
+}
+
+.btn {
+    background-color: black;
+    color: green;
+    font-size: 28px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.board-container {
+    text-align: center;
+    min-height: 300px;
 }
 
 table.center {
@@ -61,27 +77,26 @@ table.center {
     margin-right: auto;
 }
 
-td {
+#board {
+    width: 325px;
+    height: 325px;
+    border-collapse: collapse;
+}
+
+#board td {
     width: 100px;
     height: 100px;
     text-align: center;
+    vertical-align: middle;
     font-size: 28px;
+    color: green;
     border: 1px solid green;
-    color: green;
-    cursor: pointer;
 }
 
-.btn {
-    background-color: black;
-    color: green;
-    border: none;
-    padding: 10px 20px;
+.win-message {
+    margin-top: 20px;
     font-size: 28px;
-    cursor: pointer;
-}
-
-.button-container {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
+    text-align: center;
+    color: green;
+    min-height: 75px;
 }

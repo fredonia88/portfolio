@@ -1,11 +1,6 @@
 from django.contrib import admin
 from .models import (
-    Home, 
-    Contact,
-    Projects
+    TicTacToeResult
 )
 
-# Register your models here.
-admin.site.register(Home)
-admin.site.register(Contact)
-admin.site.register(Projects)
+admin.site.register(TicTacToeResult)
