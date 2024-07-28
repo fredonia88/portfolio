@@ -1,10 +1,19 @@
 document.addEventListener('DOMContentLoaded', () => {
     const board = document.getElementById('board');
     const startGameButton = document.getElementById('start-game');
-    const messageDiv = document.getElementById('winner-message');
+    const messageDiv = document.getElementById('message');
+    const difficultyTitle = document.getElementById('difficulty-title');
+    const difficultyOptions = document.getElementById('difficulty-options');
+    const dropdownDifficulty = document.querySelectorAll('.dropdown-difficulty');
     let gamePaused = true; // Pauses event listener
 
-    document.getElementById('start-game').addEventListener('click', startGame);
+    startGameButton.addEventListener('click', showDifficultyOptions);
+    difficultyTitle.addEventListener('click', selectDifficulty);
+    document.getElementById('easy').addEventListener('click', () => startGame('Easy'));
+    document.getElementById('intermediate').addEventListener('click', () => startGame('Intermediate'));
+    document.getElementById('unbeatable').addEventListener('click', () => startGame('Unbeatable'));
+
+    fetchStats('All'); // default for page refresh
 
     board.addEventListener('click', function(event) {
         if (gamePaused) {
@@ -18,19 +27,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    async function startGame() {
+    dropdownDifficulty.forEach(item => {
+        item.addEventListener('click', function(event) {
+            event.preventDefault();
+            const difficulty = event.target.getAttribute('difficulty-level');
+            fetchStats(difficulty);
+        });
+    });
+
+    function showDifficultyOptions() {
+        messageDiv.textContent = '';
+        board.style.display = 'none';
+        difficultyTitle.style.display = 'block';
+        difficultyOptions.style.display = 'block';
+    }
+
+    function selectDifficulty() {
+        difficultyTitle.style.display = 'none';
+        difficultyOptions.style.display = 'none';
+    }
+
+    async function startGame(difficulty) {
+        fetchStats(difficulty=difficulty);
+        selectDifficulty();
         try {
             const response = await fetch(startUrl, {
                 method: 'GET',
                 headers: {
-                    'X-CSRFToken': csrfToken
+                    'X-CSRFToken': csrfToken,
+                    'Difficulty-Level': difficulty
                 }
             });
 
             const data = await response.json();
             updateBoard(data.board);
             gamePaused=false;
-            board.classList.remove('disabled');
             board.style.display = 'table';
             startGameButton.textContent = 'Start new game';
 
@@ -64,6 +95,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         messageDiv.textContent = `${data.winner} wins!`;
                     }
+                    fetchStats(difficulty=data.difficulty_level);
                     return;
                 }
 
@@ -94,13 +126,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.error) {
                 alert(data.error);
             } else {
-                updateBoard(data.board, data.winner);
+                updateBoard(data.board);
                 if (data.winner) {
                     if (data.winner === 'Tie') {
                         messageDiv.textContent = `${data.winner}!`;
                     } else {
                         messageDiv.textContent = `${data.winner} wins!`;
                     }
+                    fetchStats(difficulty=data.difficulty_level);
                     return;
                 }
             }
@@ -108,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Error making move:', error);
             alert('An error occurred while making the move.');
+        
         } finally {
             gamePaused=false;
         }
@@ -124,5 +158,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             board.appendChild(row);
         }
+    }
+
+    async function fetchStats(difficulty='All') {
+        try {
+            const response = await fetch(`/tictactoe/?difficulty=${difficulty}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+            
+            const data = await response.json();
+            if (difficulty === 'All') {
+                subtitle = `${difficulty} difficulty levels`;
+            } else {
+                subtitle = `${difficulty} difficulty level`;
+            };
+            updateStats(data, subtitle);
+
+        } catch (error) {
+            console.error('Error fetching stats:', error);
+            alert('An error occurred while fetching the stats.');
+        }
+    }
+
+    function updateStats(data, subtitle) {
+        const userWinRate = parseFloat(data.user_win_rate).toFixed(1);
+        const compWinRate = parseFloat(data.comp_win_rate).toFixed(1);
+        const tieRate = parseFloat(data.tie_rate).toFixed(1);
+
+        document.querySelector('#metrics').innerHTML = `
+            <p><en style="font-style: italic;">${subtitle}</en></p>
+            <p>Total games played: ${data.games_played}</p>
+            <p>User wins: ${data.user_wins}</p>
+            <p>Computer wins: ${data.comp_wins}</p>
+            <p>Ties: ${data.ties}</p>
+            <p>User win rate: ${userWinRate}%</p>
+            <p>Computer win rate: ${compWinRate}%</p>
+            <p>Tie rate: ${tieRate}%</p>
+        `;
     }
 });

@@ -1,12 +1,17 @@
 import math
 import copy
+import random
 
 class NumberMustBeInRange(Exception):
-    '''used in enter_move method -> input must be an integer'''
+    '''used in user_move method -> input must be an integer'''
     pass
 
 class MoveIsTaken(Exception):
-    '''used in enter_move method -> move must be available'''
+    '''used in user_move method -> move must be available'''
+    pass
+
+class DifficultyLevelDoesNotExist(Exception):
+    '''used in init method -> move must be a known difficulty level'''
     pass
 
 class TicTacToe:
@@ -16,12 +21,22 @@ class TicTacToe:
         'Tie': 0,
         'X': -1
     }
+
+    levels = [
+        'Easy',
+        'Intermediate',
+        'Unbeatable'
+    ]
     
-    def __init__(self, board=None):
+    def __init__(self, board=None, difficulty_level='Easy'):
         if board:
             self.board = board
         else:
             self.board = [['' for c in range(3)] for r in range(3)]
+        if difficulty_level not in self.levels:
+            raise DifficultyLevelDoesNotExist(f'Difficulty level {difficulty_level} does not exist! Choose a different level!')
+        else:
+            self.difficulty_level = difficulty_level
 
     def free_spaces(self, board):
 
@@ -60,14 +75,27 @@ class TicTacToe:
 
         return best_move
     
+    def _determine_move(self, board):
+        free_spaces = self.free_spaces(board)
+        space = random.randint(a=0, b=len(free_spaces) - 1)
+        row, col = free_spaces[space][0], free_spaces[space][1]
+        
+        return [row, col]
+    
     def comp_move(self):
         depth = len(self.free_spaces(self.board))
         if depth == 0 or self.victory_for(self.board):
             return
 
-        move = self._determine_best_move(self.board, depth, 'O', -math.inf, math.inf)
+        if self.difficulty_level == 'Easy': 
+            move = self._determine_move(self.board)
+        elif self.difficulty_level == 'Intermediate' and len(self.free_spaces(self.board)) == 4:
+            move = self._determine_move(self.board)
+        else:
+            move = self._determine_best_move(self.board, depth, 'O', -math.inf, math.inf)
+
         row, col = move[0], move[1]
-        self.board[row][col] = 'O' 
+        self.board[row][col] = 'O'
     
     def user_move(self, row, col):
         if not 0 <= row < 3 or not 0 <= col < 3:

@@ -57,38 +57,64 @@ class TicTacToeView(View):
     model = TicTacToeResult
 
     def get(self, request):
-
-        games_played = TicTacToeResult.objects.count()
-        user_wins = TicTacToeResult.objects.filter(winner='X').count()
-        comp_wins = TicTacToeResult.objects.filter(winner='O').count()
-        ties = TicTacToeResult.objects.filter(winner='Tie').count()
-        user_win_rate = str(0.0 if games_played == 0 else round((user_wins / games_played) * 100, 1)) + '%'
-        comp_win_rate = str(0.0 if games_played == 0 else round((comp_wins / games_played) * 100, 1)) + '%'
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return self.get_stats(request)
 
         context = {
-            'title': 'Tic Tac Toe',
+            'title': 'Tic Tac Toe'
+        }
+
+        return render(request, self.template_name, context)
+
+    def get_stats(self, request):
+
+        difficulty_level = request.GET.get('difficulty', 'All')
+        if difficulty_level == 'All':
+            result = self.model.objects.all()
+        else:
+            result = self.model.objects.filter(difficulty_level=difficulty_level)
+
+        games_played = result.count()
+        user_wins = result.filter(winner='X').count()
+        comp_wins = result.filter(winner='O').count()
+        ties = result.filter(winner='Tie').count()
+
+        if games_played > 0:
+            user_win_rate = round((user_wins / games_played) * 100, 1)
+            comp_win_rate = round((comp_wins / games_played) * 100, 1)
+            tie_rate = round((ties / games_played) * 100, 1)
+        else:
+            user_win_rate = comp_win_rate = tie_rate = 0.0
+
+        stats = {
+            'difficulty_level': difficulty_level,
             'games_played': games_played,
             'user_wins': user_wins,
             'comp_wins': comp_wins,
             'ties': ties,
             'user_win_rate': user_win_rate,
-            'comp_win_rate': comp_win_rate
+            'comp_win_rate': comp_win_rate,
+            'tie_rate': tie_rate
         }
 
-        return render(request, self.template_name, context)
+        return JsonResponse(stats)
 
 class TicTacToeBoardView(View):
     template_name = 'tictactoe.html'
 
     def get(self, request):
-        game = TicTacToe()
+        level = request.headers['Difficulty-Level']
+        game = TicTacToe(difficulty_level=level)
         request.session['board'] = game.board
+        request.session['difficulty-level'] = game.difficulty_level
+
         return JsonResponse({'board': game.board})
     
     def post(self, request):
         try:
             board = request.session.get('board')
-            game = TicTacToe(board=board)
+            level = request.session.get('difficulty-level')
+            game = TicTacToe(board=board, difficulty_level=level)
 
             body = json.loads(request.body)
             if body == 'compMove':
@@ -101,11 +127,12 @@ class TicTacToeBoardView(View):
             winner = game.victory_for(game.board)
             if winner: 
                 TicTacToeResult.objects.create(
-                    winner = winner
+                    winner = winner,
+                    difficulty_level = level
                 )
 
             request.session['board'] = game.board
-            return JsonResponse({'board': game.board, 'winner': winner})
+            return JsonResponse({'board': game.board, 'winner': winner, 'difficulty_level': game.difficulty_level})
         except MoveIsTaken as e:
             response = {'error': str(e)}
             return JsonResponse(response, status=400)
