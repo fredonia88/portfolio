@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const tieRate = parseFloat(data.tie_rate).toFixed(1);
 
         document.querySelector('#metrics').innerHTML = `
-            <p><en style="font-style: italic;">${subtitle}</en></p>
+            <p style="margin-top: 40px;"><en style="font-style: italic;">${subtitle}</en></p>
             <p>Total games played: ${data.games_played}</p>
             <p>User wins: ${data.user_wins}</p>
             <p>Computer wins: ${data.comp_wins}</p>

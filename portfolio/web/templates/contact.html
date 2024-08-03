@@ -10,10 +10,36 @@
 {% endblock %}
 
 {% block content %}
+<head>
+  <link rel="stylesheet", type="text/css", href="{% static 'website/style.css' %}">
+</head>
+<body>
+  <script src="{% static 'js/contact.js' %}"></script>
+  <div id="contact-form" style="margin-top: 5px; margin-left: 40px; text-align: left;">
+    <form class="input" method="post" action="{% url 'contact' %}">
+      {% csrf_token %}
 
-<p>
-<br>
-  Coming soon!
-</p>
+      {{ form.as_p }}
+
+      <div id="captcha-error-container">
+        {% if captcha_error %}
+          ^ Captcha required!
+        {% endif %}
+      </div>
+
+      <button class="btn-small" sytle="">Submit</button>
+
+      <div id="message-container">
+        {% if messages %}
+          {% for message in messages %}
+            <span class="alert" role="alert" style="font-style: italic; margin-left: -20px;">
+              {{ message }}
+            </span>
+          {% endfor %}
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</body>
 
 {% endblock %}
