@@ -66,6 +66,15 @@ body {
     text-decoration: underline;
 }
 
+.btn-small {
+    background-color: black;
+    color: green;
+    font-size: 22px;
+    cursor: pointer;
+    text-decoration: underline;
+    border-style: none;
+}
+
 .board-container {
     text-align: center;
     min-height: 300px;
@@ -99,4 +108,46 @@ table.center {
     text-align: center;
     color: green;
     min-height: 75px;
+}
+
+.form-control {
+    background-color: black !important;
+    color: green !important;
+    border-color: green;
+}
+
+.form-control:focus {
+    border-color: green;
+    box-shadow: none;
+}
+
+.alert {
+    background-color: black;
+    color: green;
+    border-color: none;
+    box-shadow: none;
+}
+
+/* used for Chrome autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: green; 
+  -webkit-box-shadow: 0 0 0px 1000px black inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+    
+#message-container {
+    transition: opacity 1s ease-in-out;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: -4px;
+}
+
+#captcha-error-container {
+    background-color: black;
+    color: green;
+    border-color: none;
+    box-shadow: none;
+    height: 40px;
 }

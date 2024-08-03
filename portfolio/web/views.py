@@ -1,9 +1,13 @@
 import json
 from .models import TicTacToeResult
+from .forms import ContactForm
 from .tic_tac_toe import TicTacToe, MoveIsTaken
 from django.views import View
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.core.mail import send_mail
+from django.conf import settings
 from django.http import JsonResponse
+from django.contrib import messages
 
 class HomeView(View):
     template_name = 'home.html'
@@ -14,13 +18,40 @@ class HomeView(View):
 
 class ContactView(View):
     template_name = 'contact.html'
+    form = ContactForm
 
     def get(self, request):
         context = {
-            'title': 'Contact'
+            'title': 'Contact',
+            'form': self.form
         }
 
         return render(request, self.template_name, context)
+    
+    def post(self, request):
+        submission = self.form(request.POST)
+        if submission.is_valid():
+            name = submission.cleaned_data['name']
+            email = submission.cleaned_data['email']
+            message = submission.cleaned_data['message']
+
+            send_mail(
+                subject=f'New Portfolio Email From {name}!',
+                message=f'Email: {email}\nMessage: {message}',
+                from_email=settings.EMAIL_HOST_USER,
+                recipient_list=[f'{settings.EMAIL_RECIPIENT}'],
+                fail_silently=False,
+            )
+            messages.success(request, '- email sent!')
+
+            return redirect('contact')
+        
+        else:
+            if 'captcha' in submission.errors.as_data():
+                del submission.errors['captcha']
+                context = {'form': submission, 'captcha_error': True}
+                
+                return render(request, self.template_name, context)
 
 class AboutView(View):
     template_name = 'about.html'

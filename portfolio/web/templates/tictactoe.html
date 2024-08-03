@@ -24,7 +24,7 @@
                 <p>Welcome to tic-tac-toe!
                 <br><br>
                     This game features three difficulty levels: Easy, Intermediate and Unbeatable.
-                    The latter two levels utilize a minimax algorithm and alpha beta pruning to determine 
+                    The latter two levels use a minimax algorithm and alpha beta pruning to determine 
                     the computer's move. The user will always play first. 
                 <br><br>
                     The metrics represent all games played, and can be filtered to a specific difficulty level.
@@ -32,7 +32,7 @@
             </div>
         </div>
         <div class="col-12 col-md-4">
-            <button class="btn" id="start-game" style="margin-top: -10px; margin-bottom: 40px;">Start game</button>
+            <button class="btn-small" id="start-game" style="margin-top: -10px; margin-bottom: 40px;">Start game</button>
             <div class="board-container">
                 <p id="difficulty-title" class="difficulty-title" style="display: none;font-size: 22px;">Select difficulty level:</p>
                 <div id="difficulty-options" style="display:none;">
@@ -44,16 +44,15 @@
                 <div id="message" class="win-message"></div>
             </div>
         </div>
-        <div class="col-12 col-md-4">
-            <a id="dropdownMenuButton" class="btn nav-link dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: 2px; margin-bottom: 40px;">Metrics</a>
+        <div class="col-12 col-md-4" style="padding-top: 4px;">
+            <a id="dropdownMenuButton" class="btn-small dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: 20px;">Metrics</a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown" style="padding: 0;">
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="All">All</a></li>
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="Easy">Easy</a></li>
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="Intermediate">Intermediate</a></li>
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="Unbeatable">Unbeatable</a></li>
                 </ul>
-            <div id="metrics">
-            </div>
+            <div id="metrics"></div>
         </div>
     </div>
 </body>
