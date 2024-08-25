@@ -1,0 +1,153 @@
+@import url('https://fonts.googleapis.com/css?family=Fira Code');
+
+.bg {
+    background-color: black;
+}
+
+h1 {
+    color: green;
+}
+
+p {
+    color: green;
+}
+
+.navbar.navbar-expand-lg {
+    background-color: black;
+    border-bottom: 2px solid green;
+    font-size: 28px;
+}
+
+.navbar-brand {
+    color: green;
+}
+
+.nav-link {
+    color: green !important;
+}
+
+.nav-custom:hover {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+.dropdown-item {
+    background-color: black;
+    color: green !important;
+}
+
+.dropdown:hover {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
+h3 {
+    color: green;
+    text-decoration: underline;
+}
+
+body {
+    font-family: 'Fira Code';
+    font-size: 22px;
+    align-items: center;
+}
+
+.row {
+    padding: 30px;
+    text-align: center;
+    height: 100%;
+}
+
+.btn {
+    background-color: black;
+    color: green;
+    font-size: 28px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.btn-small {
+    background-color: black;
+    color: green;
+    font-size: 22px;
+    cursor: pointer;
+    text-decoration: underline;
+    border-style: none;
+}
+
+.board-container {
+    text-align: center;
+    min-height: 300px;
+}
+
+table.center {
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+#board {
+    width: 325px;
+    height: 325px;
+    border-collapse: collapse;
+}
+
+#board td {
+    width: 100px;
+    height: 100px;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 28px;
+    color: green;
+    border: 1px solid green;
+}
+
+.win-message {
+    margin-top: 20px;
+    font-size: 28px;
+    text-align: center;
+    color: green;
+    min-height: 75px;
+}
+
+.form-control {
+    background-color: black !important;
+    color: green !important;
+    border-color: green;
+}
+
+.form-control:focus {
+    border-color: green;
+    box-shadow: none;
+}
+
+.alert {
+    background-color: black;
+    color: green;
+    border-color: none;
+    box-shadow: none;
+}
+
+/* used for Chrome autofill */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: green; 
+  -webkit-box-shadow: 0 0 0px 1000px black inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+    
+#message-container {
+    transition: opacity 1s ease-in-out;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: -4px;
+}
+
+#captcha-error-container {
+    background-color: black;
+    color: green;
+    border-color: none;
+    box-shadow: none;
+    height: 40px;
+}

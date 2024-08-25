@@ -1,0 +1,12 @@
+FROM python:3.11-slim
+
+WORKDIR opt/django/
+COPY pyproject.toml .
+COPY ./portfolio/ ./portfolio/
+RUN python -m pip install . -I --no-cache-dir
+
+WORKDIR portfolio/
+RUN chmod +x start.sh
+
+EXPOSE 8000
+CMD ["./start.sh"]

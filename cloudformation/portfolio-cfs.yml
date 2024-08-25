@@ -1,0 +1,17 @@
+AWSTemplateFormatVersion: '2010-09-09'
+#Parameters:
+  #InstanceType:
+  #  Description: Type of EC2 instance
+  #  Type: String
+  #  Default: t2.micro
+  #SecretTemplate:
+  #  Type: String
+  #  Description: Template that holds the dbt user password
+
+Resources:
+  SecretManger:
+    Type: AWS::SecretsManager::Secret
+    Properties: 
+      Description: Holds the secrets to run Django
+      Name: fred-portfolio-django
+      #SecretString: !Sub "${SecretTemplate}"
