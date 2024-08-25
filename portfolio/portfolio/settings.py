@@ -123,9 +123,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = '/static/'
-# used to run locally with gunicorn
-#STATIC_URL = 'http://127.0.0.1:8080/'
-# used to run locally with docker
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 
@@ -135,9 +132,9 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = os.getenv('DJANGO_EMAIL_HOST') #'localhost'
-EMAIL_PORT = os.getenv('DJANGO_EMAIL_PORT') #1025
-EMAIL_USE_TLS = os.getenv('DJANGO_EMAIL_USE_TLS') #False
+EMAIL_HOST = os.getenv('DJANGO_EMAIL_HOST')
+EMAIL_PORT = os.getenv('DJANGO_EMAIL_PORT')
+EMAIL_USE_TLS = os.getenv('DJANGO_EMAIL_USE_TLS')
 EMAIL_HOST_USER = os.getenv('DJANGO_EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('DJANGO_EMAIL_HOST_PASSWORD')
 EMAIL_RECIPIENT = os.getenv('DJANGO_EMAIL_RECIPIENT')
