@@ -1,9 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
-#Parameters:
-  #InstanceType:
-  #  Description: Type of EC2 instance
-  #  Type: String
-  #  Default: t2.micro
+Parameters:
+  GitKeysSecretArn:
+    Type: String
+    Description: The arn for fred-portfolio-ec2-git-keys secret
+    Default: arn:aws:secretsmanager:us-east-1:179790731219:secret:fred-portfolio-ec2-git-keys-j5PeD2
   #SecretTemplate:
   #  Type: String
   #  Description: Template that holds the dbt user password
@@ -15,3 +15,86 @@ Resources:
       Description: Holds the secrets to run Django
       Name: fred-portfolio-django
       #SecretString: !Sub "${SecretTemplate}"
+
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: fred-portfolio-ec2-role
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      #  - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Policies:
+        - PolicyName: fred-portfolio-ec2-s3-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:ListBucket
+                Resource:
+                  - !Sub "arn:aws:s3:::fred-portfolio/*"
+                  - !Sub "arn:aws:s3:::fred-portfolio"
+        - PolicyName: fred-portfolio-secrets-access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: 
+                  - !Sub "${GitKeysSecretArn}"
+
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2InstanceRole
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for the EC2 instance.
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+
+  EC2KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties:
+      KeyName: fred-portfolio-kp
+      KeyType: rsa
+          
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      KeyName: !Ref EC2KeyPair 
+      ImageId: ami-05548f9cecf47b442
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SecurityGroups:
+        - !Ref EC2SecurityGroup
+      Tags:
+        - Key: Name
+          Value: fred-portfolio-ec2
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update
+          aws s3 cp s3://fred-portfolio/deploy/user-data.sh opt/deploy/
+          bash opt/deploy/user-data.sh
+          
