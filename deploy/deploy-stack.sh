@@ -29,11 +29,13 @@ if [[ "$build" != "create" && "$build" != "update" ]]; then
     exit_with_error "Error: Invalid 'build' value. Allowed values: 'create|update'"
 fi
 
-# remove cloudformation directory on s3
+# remove cloudformation and deploy directories on s3
 aws s3 rm --recursive s3://fred-portfolio/cloudformation/ --profile=personal
+aws s3 rm --recursive s3://fred-portfolio/deploy/ --profile=personal
 
-# add cloudformation directory and file to s3
+# add cloudformation and deploy directories to s3
 aws s3 cp --recursive cloudformation/ s3://fred-portfolio/cloudformation/ --profile=personal
+aws s3 cp --recursive deploy/ s3://fred-portfolio/deploy/ --profile=personal
 
 # create or update stack
 if [[ "$build" == "create" ]]; then
