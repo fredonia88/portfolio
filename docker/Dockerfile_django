@@ -1,9 +1,11 @@
 FROM python:3.11-slim
 
 WORKDIR opt/django/
-COPY pyproject.toml .
+#COPY pyproject.toml .
+COPY requirements.txt .
 COPY ./portfolio/ ./portfolio/
-RUN python -m pip install . -I --no-cache-dir
+#RUN python -m pip install . -I --no-cache-dir
+RUN pip install -r requirements.txt -I --no-cache
 
 WORKDIR portfolio/
 RUN chmod +x start.sh

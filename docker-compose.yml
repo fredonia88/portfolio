@@ -28,7 +28,6 @@ services:
       - docker_network
 
   db:
-    #profiles: ["dev"]
     image: postgres:15
     container_name: db_postgres
     expose:

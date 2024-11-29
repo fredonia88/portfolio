@@ -4,4 +4,5 @@ Django==5.0.7
 django-recaptcha==4.0.0
 gunicorn==22.0.0
 packaging==24.1
+python-dotenv==1.0.1
 sqlparse==0.5.1
