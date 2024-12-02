@@ -37,19 +37,19 @@ if [[ "$env" = "dev" ]]; then
     source portfolio/.env
     set +a
 else
-    export DJANGO_DEBUG=False
     SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id fred-portfolio-django --query SecretString --output text)
-    export DJANGO_SECRET_KEY=$(echo $SECRET_VALUE | jq -r .secret_key)
-    export DJANGO_EMAIL_HOST=$(echo $SECRET_VALUE | jq -r .email_host)
-    export DJANGO_EMAIL_PORT=$(echo $SECRET_VALUE | jq -r .email_port)
-    export DJANGO_EMAIL_USE_TLS=$(echo $SECRET_VALUE | jq -r .email_use_tls)
-    export DJANGO_EMAIL_HOST_USER=$(echo $SECRET_VALUE | jq -r .email_host_user)
-    export DJANGO_EMAIL_HOST_PASSWORD=$(echo $SECRET_VALUE | jq -r .email_host_password)
-    export DJANGO_EMAIL_RECIPIENT=$(echo $SECRET_VALUE | jq -r .email_recipient)
-    export DJANGO_RECAPTCHA_PUBLIC_KEY=$(echo $SECRET_VALUE | jq -r .recaptcha_public_key)
-    export DJANGO_RECAPTCHA_PRIVATE_KEY=$(echo $SECRET_VALUE | jq -r .recaptcha_private_key)
-    export POSTGRES_DB=$(echo $SECRET_VALUE | jq -r .postgres_db)
-    export POSTGRES_USER=$(echo $SECRET_VALUE | jq -r .postgres_user)
-    export POSTGRES_PASSWORD=$(echo $SECRET_VALUE | jq -r .postgres_password)
+    export DJANGO_SECRET_KEY=$(echo $SECRET_VALUE | jq -r .DJANGO_SECRET_KEY)
+    export DJANGO_EMAIL_HOST=$(echo $SECRET_VALUE | jq -r .DJANGO_EMAIL_HOST)
+    export DJANGO_EMAIL_PORT=$(echo $SECRET_VALUE | jq -r .DJANGO_EMAIL_PORT)
+    export DJANGO_EMAIL_USE_TLS=$(echo $SECRET_VALUE | jq -r .DJANGO_EMAIL_USE_TLS)
+    export DJANGO_EMAIL_HOST_USER=$(echo $SECRET_VALUE | jq -r .DJANGO_EMAIL_HOST_USER)
+    export DJANGO_EMAIL_HOST_PASSWORD=$(echo $SECRET_VALUE | jq -r .DJANGO_EMAIL_HOST_PASSWORD)
+    export DJANGO_EMAIL_RECIPIENT=$(echo $SECRET_VALUE | jq -r .DJANGO_EMAIL_RECIPIENT)
+    export DJANGO_RECAPTCHA_PUBLIC_KEY=$(echo $SECRET_VALUE | jq -r .DJANGO_RECAPTCHA_PUBLIC_KEY)
+    export DJANGO_RECAPTCHA_PRIVATE_KEY=$(echo $SECRET_VALUE | jq -r .DJANGO_RECAPTCHA_PRIVATE_KEY)
+    export POSTGRES_DB=$(echo $SECRET_VALUE | jq -r .POSTGRES_DB)
+    export POSTGRES_USER=$(echo $SECRET_VALUE | jq -r .POSTGRES_USER)
+    export POSTGRES_PASSWORD=$(echo $SECRET_VALUE | jq -r .POSTGRES_PASSWORD)
+    export DJANGO_DEBUG=False # overwrite in case this is set to True in .env file
     unset SECRET_VALUE
 fi
