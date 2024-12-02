@@ -29,27 +29,34 @@ if [[ "$build" != "create" && "$build" != "update" ]]; then
     exit_with_error "Error: Invalid 'build' value. Allowed values: 'create|update'"
 fi
 
-# generate keys in temporary file and delete
-echo "Generating rsa keys..."
-TMP_PRIVATE_KEY=$(mktemp)
-chmod 600 "$TMP_PRIVATE_KEY"
-ssh-keygen -t rsa -b 2048 -N '' -C "" -f "$TMP_PRIVATE_KEY" <<< y
-PRIVATE_KEY=$(cat "$TMP_PRIVATE_KEY")
-PUBLIC_KEY=$(ssh-keygen -y -f "$TMP_PRIVATE_KEY")
-SECRET_PAYLOAD=$(jq -n --arg private "$PRIVATE_KEY" --arg public "$PUBLIC_KEY" \
-    '{private_key: $private, public_key: $public}')
+ENV_FILE="portfolio/.env"
 
-rm -f "$TMP_PRIVATE_KEY"
+# check if .env file exists
+if [ ! -f "$ENV_FILE" ]; then
+    exit_with_error "Error: .env file not found!"
+fi
+
+# convert .env file to JSON string
+SECRET_PAYLOAD=$(jq -n --rawfile env $ENV_FILE '
+  $env | split("\n") | map(select(length > 0)) |
+  map(
+    . as $line |
+    {
+      ( $line | split("=")[0] ): ( $line | split("=")[1:] | join("=") )
+    }
+  ) |
+  add
+')
 
 # create or update secret
 if [[ "$build" == "create" ]]; then
     echo "Creating the secret..."
     aws secretsmanager create-secret \
-        --name "fred-portfolio-ec2-git-keys" \
+        --name "fred-portfolio-django" \
         --secret-string "$SECRET_PAYLOAD"
 elif [[ "$build" == "update" ]]; then
     echo "Updating the secret..."
     aws secretsmanager put-secret-value \
-        --secret-id "fred-portfolio-ec2-git-keys" \
+        --secret-id "fred-portfolio-django" \
         --secret-string "$SECRET_PAYLOAD"
 fi

@@ -38,7 +38,7 @@ if [[ "$env" = "dev" ]]; then
     set +a
 else
     export DJANGO_DEBUG=False
-    SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id fred-portfolio-django --query SecretString --output text --profile personal)
+    SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id fred-portfolio-django --query SecretString --output text)
     export DJANGO_SECRET_KEY=$(echo $SECRET_VALUE | jq -r .secret_key)
     export DJANGO_EMAIL_HOST=$(echo $SECRET_VALUE | jq -r .email_host)
     export DJANGO_EMAIL_PORT=$(echo $SECRET_VALUE | jq -r .email_port)

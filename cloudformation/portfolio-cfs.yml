@@ -1,19 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Parameters:
-  GitKeysSecretArn:
-    Type: String
-    Description: The arn for fred-portfolio-ec2-git-keys secret
-    Default: arn:aws:secretsmanager:us-east-1:179790731219:secret:fred-portfolio-ec2-git-keys-j5PeD2
+#Parameters:
+  #GitKeysSecretArn:
+  #  Type: String
+  #  Description: The arn for fred-portfolio-ec2-git-keys secret
+  #  Default: arn:aws:secretsmanager:us-east-1:179790731219:secret:fred-portfolio-ec2-git-keys-j5PeD2
   #SecretTemplate:
   #  Type: String
   #  Description: Template that holds the dbt user password
 
 Resources:
-  SecretManger:
-    Type: AWS::SecretsManager::Secret
-    Properties: 
-      Description: Holds the secrets to run Django
-      Name: fred-portfolio-django
+  # SecretManger:
+  #   Type: AWS::SecretsManager::Secret
+  #   Properties: 
+  #     Description: Holds the secrets to run Django
+  #     Name: fred-portfolio-django
       #SecretString: !Sub "${SecretTemplate}"
 
   EC2InstanceRole:
@@ -51,7 +51,8 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: 
-                  - !Sub "${GitKeysSecretArn}"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:fred-portfolio-ec2-git-keys*"
+                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:fred-portfolio-django*"
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
