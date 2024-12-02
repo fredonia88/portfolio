@@ -59,7 +59,12 @@ git clone git@github.com:fredonia88/portfolio.git
 # source venv, cd into repo and install the project
 cd portfolio
 source ~/venvs/portfolio/bin/activate
-python -m pip install -r requirements.txt -I --no-cache
-#python -m pip install . -I --no-cache
-cd ~
+python -m pip install . -I --no-cache
+
+# set secrets
+source get_secrets.sh --env=prod
+
+# docker compose build and up
+docker compose build
+docker compose up
 EOF

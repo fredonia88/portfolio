@@ -30,34 +30,32 @@ if [[ "$build" != "create" && "$build" != "update" ]]; then
 fi
 
 # remove cloudformation and deploy directories on s3
-aws s3 rm --recursive s3://fred-portfolio/cloudformation/ --profile=personal
-aws s3 rm --recursive s3://fred-portfolio/deploy/ --profile=personal
+aws s3 rm --recursive s3://fred-portfolio/cloudformation/
+aws s3 rm --recursive s3://fred-portfolio/deploy/
 
 # add cloudformation and deploy directories to s3
-aws s3 cp --recursive cloudformation/ s3://fred-portfolio/cloudformation/ --profile=personal
-aws s3 cp --recursive deploy/ s3://fred-portfolio/deploy/ --profile=personal
+aws s3 cp --recursive cloudformation/ s3://fred-portfolio/cloudformation/
+aws s3 cp --recursive deploy/ s3://fred-portfolio/deploy/
 
 # create or update stack
 if [[ "$build" == "create" ]]; then
-    echo "Creating the stack 'fred-portfolio-cfs' in personal in us-east-1..."
+    echo "Creating the stack 'fred-portfolio-cfs' in us-east-1..."
     aws cloudformation create-stack \
         --stack-name fred-portfolio-cfs \
         --template-url https://fred-portfolio.s3.amazonaws.com/cloudformation/portfolio-cfs.yml \
         --capabilities CAPABILITY_NAMED_IAM \
-        --region us-east-1 \
-        --profile personal
+        --region us-east-1
         #--parameters ParameterKey=Env,ParameterValue=$profile \
         #    ParameterKey=DB,ParameterValue=$db \
         #    ParameterKey=SecretTemplate,ParameterValue=$secrets \
         #    ParameterKey=ClusterId,ParameterValue=$clusterid \
 elif [[ "$build" == "update" ]]; then
-    echo "Updating the stack 'fred-portfolio-cfs' in personal in us-east-1..."
+    echo "Updating the stack 'fred-portfolio-cfs' in us-east-1..."
     aws cloudformation update-stack \
         --stack-name fred-portfolio-cfs \
         --template-url https://fred-portfolio.s3.amazonaws.com/cloudformation/portfolio-cfs.yml \
         --capabilities CAPABILITY_NAMED_IAM \
-        --region us-east-1 \
-        --profile personal
+        --region us-east-1
         #--parameters ParameterKey=Env,ParameterValue=$profile \
         #    ParameterKey=DB,ParameterValue=$db \
         #    ParameterKey=SecretTemplate,ParameterValue=$secrets \

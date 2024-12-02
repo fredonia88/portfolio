@@ -6,8 +6,7 @@ exit_with_error() {
     exit 1
 }
 
-echo "Creating the bucket 'fred-portfolio' using profile 'personal' in us-east-1..."
+echo "Creating the bucket 'fred-portfolio' in us-east-1..."
 aws s3api create-bucket \
     --bucket fred-portfolio \
-    --region us-east-1 \
-    --profile personal
+    --region us-east-1
