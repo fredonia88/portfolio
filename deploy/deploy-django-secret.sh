@@ -42,7 +42,7 @@ SECRET_PAYLOAD=$(jq -n --rawfile env $ENV_FILE '
   map(
     . as $line |
     {
-      ( $line | split("=")[0] ): ( $line | split("=")[1:] | join("=") )
+      ( $line | split("=")[0] ): ( $line | split("=")[1:] | join("=") | gsub("^\"|\"$"; "") )
     }
   ) |
   add
