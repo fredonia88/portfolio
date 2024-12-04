@@ -1,21 +1,19 @@
 AWSTemplateFormatVersion: '2010-09-09'
-#Parameters:
-  #GitKeysSecretArn:
-  #  Type: String
-  #  Description: The arn for fred-portfolio-ec2-git-keys secret
-  #  Default: arn:aws:secretsmanager:us-east-1:179790731219:secret:fred-portfolio-ec2-git-keys-j5PeD2
-  #SecretTemplate:
-  #  Type: String
-  #  Description: Template that holds the dbt user password
+Parameters:
+  GitKeysSecretArn:
+    Type: String
+    Description: The arn for fred-portfolio-ec2-git-keys secret
+    Default: arn:aws:secretsmanager:us-east-1:179790731219:secret:fred-portfolio-ec2-git-keys*
+  DjangoSecretArn:
+    Type: String
+    Description: The arn for fred-portfolio-django secret
+    Default: arn:aws:secretsmanager:us-east-1:179790731219:secret:fred-portfolio-django*
+  HostedZoneId:
+    Type: String
+    Description: The id for the Hosted Zone of loriendream.com
+    Default: Z03890423UQISR504TVQJ
 
 Resources:
-  # SecretManger:
-  #   Type: AWS::SecretsManager::Secret
-  #   Properties: 
-  #     Description: Holds the secrets to run Django
-  #     Name: fred-portfolio-django
-      #SecretString: !Sub "${SecretTemplate}"
-
   EC2InstanceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -29,7 +27,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
-      #  - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        # - arn:aws:iam::aws:policy/AmazonS3FullAccess
       Policies:
         - PolicyName: fred-portfolio-ec2-s3-policy
           PolicyDocument:
@@ -51,8 +49,8 @@ Resources:
                 Action:
                   - secretsmanager:GetSecretValue
                 Resource: 
-                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:fred-portfolio-ec2-git-keys*"
-                  - !Sub "arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:fred-portfolio-django*"
+                  - !Ref GitKeysSecretArn
+                  - !Ref DjangoSecretArn
 
   EC2InstanceProfile:
     Type: AWS::IAM::InstanceProfile
@@ -65,19 +63,18 @@ Resources:
     Properties:
       GroupDescription: Security group for the EC2 instance.
       SecurityGroupIngress:
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: tcp
+        - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
-        - CidrIp: 0.0.0.0/0
-          IpProtocol: tcp
-          FromPort: 443
-          ToPort: 443
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: fred-portfolio-ec2-sg
 
   EC2KeyPair:
     Type: AWS::EC2::KeyPair
     Properties:
-      KeyName: fred-portfolio-kp
+      KeyName: fred-portfolio-ec2-kp
       KeyType: rsa
           
   EC2Instance:
@@ -98,18 +95,121 @@ Resources:
           yum update
           aws s3 cp s3://fred-portfolio/deploy/user-data.sh opt/deploy/
           bash opt/deploy/user-data.sh
-          
-  ElasticIP:
-    Type: AWS::EC2::EIP
-    Properties:
-      InstanceId: !Ref EC2Instance
 
-  HostedZoneRecord:
+  RootDomainRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      HostedZoneName: "loriendream.com." # domain
-      Name: "loriendream.com." # subdomain
+      HostedZoneId: !Ref HostedZoneId
+      Name: "loriendream.com"
       Type: "A"
-      TTL: "300"
-      ResourceRecords:
-        - !Ref ElasticIP        
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+
+  WWWDomainRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: "www.loriendream.com"
+      Type: "A"
+      AliasTarget:
+        DNSName: !GetAtt LoadBalancer.DNSName
+        HostedZoneId: !GetAtt LoadBalancer.CanonicalHostedZoneID
+
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for the ALB
+      VpcId: vpc-c9ec45b4
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: fred-portfolio-alb-sg
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: fred-portfolio-alb
+      Scheme: internet-facing
+      Subnets:
+        - subnet-979805f1
+        - subnet-bba836e4
+        - subnet-a1e7caec
+        - subnet-044b1c0a
+        - subnet-121e8633
+        - subnet-9f2b8aae
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Type: application
+
+  NginxTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: fred-portfolio-nginx-tg
+      Port: 80
+      Protocol: HTTP
+      VpcId: vpc-c9ec45b4
+      TargetType: ip
+      HealthCheckPath: /
+      HealthCheckIntervalSeconds: 30
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 3
+      UnhealthyThresholdCount: 3
+      Targets:
+          - Id: !GetAtt EC2Instance.PrivateIp
+            Port: 80
+
+  LoadBalancerHTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: redirect
+          RedirectConfig:
+            Protocol: HTTPS
+            Port: "443"
+            StatusCode: HTTP_301
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 80
+      Protocol: HTTP
+      Tags:
+        - Key: Name
+          Value: fred-portfolio-alb-http-listener
+
+  LoadBalancerHTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref NginxTargetGroup
+      LoadBalancerArn: !Ref LoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref SSLCertificate
+      Tags:
+        - Key: Name
+          Value: fred-portfolio-alb-https-listener
+
+  SSLCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: "loriendream.com"
+      SubjectAlternativeNames:
+        - "www.loriendream.com"
+      DomainValidationOptions:
+        - DomainName: "loriendream.com"
+          HostedZoneId: !Ref HostedZoneId
+        - DomainName: "www.loriendream.com"
+          HostedZoneId: !Ref HostedZoneId
+      ValidationMethod: DNS
