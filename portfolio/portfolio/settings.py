@@ -84,6 +84,7 @@ WSGI_APPLICATION = 'portfolio.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+#if os.getenv('DJANGO_ENV') == 'dev':
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -148,3 +149,5 @@ RECAPTCHA_PRIVATE_KEY = os.getenv('DJANGO_RECAPTCHA_PRIVATE_KEY')
 
 # set SSL_CERT_FILE env var
 os.environ['SSL_CERT_FILE'] = certifi.where()
+
+CSRF_TRUSTED_ORIGINS = ['https://loriendream.com']
