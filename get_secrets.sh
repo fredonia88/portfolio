@@ -32,9 +32,8 @@ fi
 export DJANGO_ENV=$env
 
 if [[ "$env" = "dev" ]]; then
-    export DJANGO_DEBUG=True
-    set -a # ensure variables in .env are automatically exported
-    source portfolio/.env
+    set -a # ensure variables in ._dev.env are automatically exported
+    source portfolio/_dev.env
     set +a
 else
     SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id fred-portfolio-django --query SecretString --output text)
