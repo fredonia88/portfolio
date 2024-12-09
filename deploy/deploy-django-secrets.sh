@@ -29,7 +29,7 @@ if [[ "$build" != "create" && "$build" != "update" ]]; then
     exit_with_error "Error: Invalid 'build' value. Allowed values: 'create|update'"
 fi
 
-ENV_FILE="portfolio/.env"
+ENV_FILE="portfolio/_prod.env"
 
 # check if .env file exists
 if [ ! -f "$ENV_FILE" ]; then

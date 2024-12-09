@@ -15,6 +15,6 @@ dist/
 jupyternotebooks/
 .ipynb_checkpoints/
 *.sqlite3
-.env
+*.env
 .portfolio
 .nginx
