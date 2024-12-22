@@ -39,6 +39,7 @@ Create two .env files to hold the secrets for dev and prod environments `_dev.en
  - `sudo /usr/pgsql-15/bin/postgresql-15-setup initdb` (init the db)
  - `sudo systemctl enable postgresql-15` (enable to start on boot)
  - `sudo systemctl start postgresql-15` (start the service)
+ - `sudo systemctl status postgresql-15` (check postgres is running)
 
 Lastly, add the secrets in the `_dev.env` file as env vars: 
  - `source get_secrets.sh --env=dev`
@@ -49,6 +50,10 @@ With the database running and the secrets in place, you should be able to run th
  - `python manage.py migrate web`
  - `python manage.py runserver`
 
+ Here are some useful postgres shortcuts you can run: 
+
+ - `sudo -i -u postgres` (assume the postgres user)
+ - `psql` (start psql shell)
  
  ## How to run locally in docker
  
