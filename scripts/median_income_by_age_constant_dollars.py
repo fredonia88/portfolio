@@ -87,4 +87,4 @@ postgres = Postgres(
     port=os.getenv('POSTGRES_PORT'),
     database=os.getenv('POSTGRES_DB')
 )
-postgres.write_df(final_df, 'median_income_by_age_constant_dollars')
+postgres.write_df(final_df, 'median_income_by_age_constant_dollars', add_id_column=True)

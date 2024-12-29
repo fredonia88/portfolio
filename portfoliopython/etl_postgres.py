@@ -24,15 +24,22 @@ class Postgres:
         """
         return pl.read_database_uri(query=query, uri=self.uri)
 
-    def write_df(self, df: pl.DataFrame, table_name: str) -> None:
+    def write_df(self, df: pl.DataFrame, table_name: str, add_id_column: bool=False) -> None:
         """Write a polars df to postgres db.
         
         :param df: The dataframe to write.
         :type df: pl.DataFrame
         :param table_name: The table name to write to.
         :type table_name: str
+        :param add_id_column: Add an id column to the front of the df.
+        :type add_id_column: bool
         :returns: None.
         :rtype: None
         """
+        
+        if add_id_column:
+            id_column = pl.Series('id', range(1, len(df) + 1))
+            df.insert_column(0, id_column)
+            
         df.write_database(table_name=table_name, connection=self.uri, if_table_exists='replace')
         

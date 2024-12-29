@@ -7,9 +7,24 @@
 
 {% block content %}
 
-<p>
-<br>
-  Coming soon!
-</p>
+<body>
+  <div class="row" style="display: flex; height: 100vh;">
+    <div class="col-12 col-md-4" style="flex: 0 0 auto; max-width: 30%; margin-left: 40px;">
+      <div id="about-text" style="margin-top: 5px; text-align: left;">
+        <p>
+          War on the young!
+          <br><br>
+          This is about the war on the young.
+          <br><br>
+          See my income chart at right.
+        </p>
+      </div>
+    </div>
+    <div id="chartContainer" class="col-12 col-md-8" style="flex: 1; display: flex; justify-content: center; align-items: center;">
+      <canvas id="blsMedianIncomeChart" width="800" height="500"></canvas>
+    </div>
+  </div>
+  <script src="{% static 'js/bls.js' %}"></script>
+</body>
 
 {% endblock %}

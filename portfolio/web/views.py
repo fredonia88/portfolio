@@ -1,5 +1,8 @@
 import json
-from .models import TicTacToeResult
+from .models import (
+    TicTacToeResult,
+    MedianIncomeByAgeConstantDollars
+)
 from .forms import ContactForm
 from .tic_tac_toe import TicTacToe, MoveIsTaken
 from django.views import View
@@ -77,11 +80,33 @@ class BlsView(View):
     template_name = 'bls.html'
 
     def get(self, request):
+
         context = {
             'title': 'Bls'
         }
 
         return render(request, self.template_name, context)
+
+
+class BlsChartView(View):
+    template_name = 'bls.html'
+    model = MedianIncomeByAgeConstantDollars
+
+    def get(self, request):
+
+        datasets = {}
+        data = self.model.objects.values('year', 'demographic_age', 'yearly_value_constant_dollars')
+        for entry in data:
+            year = str(entry['year'])
+            age = entry['demographic_age']
+            income = entry['yearly_value_constant_dollars']
+
+            if age not in datasets:
+                datasets[age] = {'label': age, 'data': [], 'borderColor': '', 'fill': False, 'tension': 0.1}
+            datasets[age]['data'].append({'x': year, 'y': income})
+
+        return JsonResponse(list(datasets.values()), safe=False)
+
 
 class TicTacToeView(View):
     template_name = 'tictactoe.html'
