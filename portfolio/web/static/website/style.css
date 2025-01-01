@@ -162,11 +162,14 @@ input:-webkit-autofill:focus {
 }
 
 #chartContainer {
+    flex: 1;
     display: flex;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     height: auto;
-    margin-top: -6px;
+    color: green;
+    
 }
   
 #blsMedianIncomeChart {

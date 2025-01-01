@@ -11,7 +11,7 @@ fetch('/bls/chart-data')
                 plugins: {
                     title: {
                         display: true, 
-                        text: 'Median Income by Age (in constant 2023 USD)',
+                        text: 'Median Income by Demographic Age (in constant 2023 USD)',
                         color: '#008000',
                         font: {size: 24, family: 'Fira Code'}
                     },
@@ -23,7 +23,7 @@ fetch('/bls/chart-data')
                             color: '#008000',
                             boxWidth: 20,
                             boxHeight: 10,
-                            padding: 15,
+                            padding: 20,
                             usePointStyle: true, 
                             pointStyle: 'circle' 
                         }

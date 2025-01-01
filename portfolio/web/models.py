@@ -14,3 +14,14 @@ class MedianIncomeByAgeConstantDollars(models.Model):
     class Meta:
         managed = False
         db_table = 'median_income_by_age_constant_dollars'
+
+class MedianIncomePercentChangeByAgeConstantDollars(models.Model):
+    id = models.AutoField(primary_key=True)
+    demographic_age = models.TextField(blank=True, null=True)
+    starting_value_constant_dollars = models.FloatField(blank=True, null=True)
+    ending_value_constant_dollars = models.FloatField(blank=True, null=True)
+    percent_change_in_income = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'median_income_percent_change_by_age_constant_dollars'
