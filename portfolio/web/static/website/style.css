@@ -75,6 +75,11 @@ body {
     border-style: none;
 }
 
+.btn-small:hover {
+    background-color: transparent !important;
+    color: inherit !important;
+}
+
 .board-container {
     text-align: center;
     min-height: 300px;
@@ -175,4 +180,12 @@ input:-webkit-autofill:focus {
 #blsMedianIncomeChart {
     max-width: 100%;
     height: 100%;
+}
+
+h4 {
+    color: green;
+}
+
+li {
+    color: green;
 }
