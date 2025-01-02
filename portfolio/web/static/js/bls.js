@@ -27,6 +27,18 @@ fetch('/bls/chart-data')
                             usePointStyle: true, 
                             pointStyle: 'circle' 
                         }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const value = context.raw;
+                                const xValue = value.x;
+                                const yValue = Math.round(value.y);
+                                const formattedYValue = '$' + yValue.toLocaleString()
+                                const label = `Year: ${xValue}, Median Income: ${formattedYValue}`
+                                return label;
+                            }
+                        }
                     }
                 },
                 layout: {
@@ -68,7 +80,10 @@ fetch('/bls/chart-data')
                         ticks: {
                             color: '#008000',
                             font: {size: 16, family: 'Fira Code'}, 
-                            padding: 10
+                            padding: 10,
+                            callback: function(value, index, values) {
+                                return '$' + value.toLocaleString();
+                            }
                         }
                     }
                 }
