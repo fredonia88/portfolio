@@ -66,8 +66,15 @@ final_df = pl.concat(dfs, how='vertical')
 final_df = pl.DataFrame(final_df, schema_overrides={'year': pl.Int64, 'value': pl.Float64})
 final_df = final_df.filter(pl.col('demographic_age') != '16 years and over')
 
-cpi_df = pl.read_csv('/home/fred/Downloads/CPI Index by Year - Sheet1.csv')
-cpi_df = cpi_df.rename({'YEAR': 'year', 'AVG': 'cpi_index_avg'})
+# retrieve CPI data from db
+postgres = Postgres(
+    username=os.getenv('POSTGRES_USER'),
+    password=os.getenv('POSTGRES_PASSWORD'),
+    server=os.getenv('POSTGRES_SERVER'),
+    port=os.getenv('POSTGRES_PORT'),
+    database=os.getenv('POSTGRES_DB')
+)
+cpi_df = postgres.query_to_df('select year, cpi_index_avg from cpi_index_by_year')
 
 final_df = final_df.join(cpi_df, 'year', 'left')
 base_index = final_df.filter(pl.col('year') == 2023).select('cpi_index_avg').min().item()
@@ -89,12 +96,5 @@ final_percent_change_df = final_percent_change_df.with_columns(((pl.col('ending_
 final_percent_change_df = final_percent_change_df.with_columns((pl.col('percent_change_in_income') * 100).round(1))
 
 # ETL datasets into postgres
-postgres = Postgres(
-    username=os.getenv('POSTGRES_USER'),
-    password=os.getenv('POSTGRES_PASSWORD'),
-    server=os.getenv('POSTGRES_SERVER'),
-    port=os.getenv('POSTGRES_PORT'),
-    database=os.getenv('POSTGRES_DB')
-)
 postgres.write_df(final_df, 'median_income_by_age_constant_dollars', add_id_column=True)
 postgres.write_df(final_percent_change_df, 'median_income_percent_change_by_age_constant_dollars', add_id_column=True)

@@ -25,6 +25,7 @@ dependencies = [
     "psycopg2-binary==2.9.10",
     "pyarrow==18.1.0",
     "python-dotenv==1.0.1",
+    "requests==2.32.3",
     "sqlalchemy==2.0.36",
     "sqlparse==0.5.1"
 ]
@@ -112,7 +113,6 @@ jupyter = [
     "PyYAML==6.0.2",
     "pyzmq==26.2.0",
     "referencing==0.35.1",
-    "requests==2.32.3",
     "rfc3339-validator==0.1.4",
     "rfc3986-validator==0.1.1",
     "rpds-py==0.22.3",

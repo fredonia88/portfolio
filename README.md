@@ -27,6 +27,7 @@ Create two .env files to hold the secrets for dev and prod environments `_dev.en
  - DJANGO_EMAIL_RECIPIENT
  - DJANGO_RECAPTCHA_PUBLIC_KEY
  - DJANGO_RECAPTCHA_PRIVATE_KEY
+ - BLS_REGISTRATION_KEY
  - POSTGRES_DB
  - POSTGRES_USER
  - POSTGRES_PASSWORD
@@ -70,3 +71,5 @@ Lastly, run the below to build the image and compose up:
 ## How to deploy to AWS
 
 Run all the scripts in the deploy folder to create the S3 bucket, secrets for the git keys for the EC2 instance (add the secret values manually), the project's secrets (which you should've already done), the Route53 hosted zone for the domains and finally the script to deploy the project's stack (EC2, Load Balancer, Listeners, Security Groups, Target Group, SSL Certificates, etc).
+
+Use this command to create a bash shell in a container: `docker exec -i -t <mycontainer> /bin/bash`

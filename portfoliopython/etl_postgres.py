@@ -14,7 +14,7 @@ class Postgres:
     ):
         self.uri = f'postgresql://{username}:{password}@{server}:{port}/{database}'
 
-    def read_table(self, query: str) -> pl.DataFrame:
+    def query_to_df(self, query: str) -> pl.DataFrame:
         """Run a query against postgres db into a polars df.
         
         :param query: The query to run.
