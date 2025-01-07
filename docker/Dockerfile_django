@@ -1,12 +1,20 @@
 FROM python:3.11-slim
 
-WORKDIR opt/django/
+WORKDIR /opt/django/
+
 COPY pyproject.toml .
 COPY ./portfolio/ ./portfolio/
-RUN python -m pip install . -I --no-cache-dir
+COPY ./portfoliopython/ ./portfoliopython/
+COPY ./docker/entrypoint.sh .
 
-WORKDIR portfolio/
-RUN chmod +x start.sh
+RUN chmod +x /opt/django/portfolio/start.sh
+RUN chmod +x /opt/django/entrypoint.sh
+
+RUN python -m pip install . 
 
 EXPOSE 8000
-CMD ["./start.sh"]
+
+WORKDIR /opt/django/
+CMD ["/opt/django/entrypoint.sh"]
+
+WORKDIR portfolio/

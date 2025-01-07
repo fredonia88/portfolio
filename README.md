@@ -27,6 +27,7 @@ Create two .env files to hold the secrets for dev and prod environments `_dev.en
  - DJANGO_EMAIL_RECIPIENT
  - DJANGO_RECAPTCHA_PUBLIC_KEY
  - DJANGO_RECAPTCHA_PRIVATE_KEY
+ - BLS_REGISTRATION_KEY
  - POSTGRES_DB
  - POSTGRES_USER
  - POSTGRES_PASSWORD
@@ -39,6 +40,7 @@ Create two .env files to hold the secrets for dev and prod environments `_dev.en
  - `sudo /usr/pgsql-15/bin/postgresql-15-setup initdb` (init the db)
  - `sudo systemctl enable postgresql-15` (enable to start on boot)
  - `sudo systemctl start postgresql-15` (start the service)
+ - `sudo systemctl status postgresql-15` (check postgres is running)
 
 Lastly, add the secrets in the `_dev.env` file as env vars: 
  - `source get_secrets.sh --env=dev`
@@ -49,6 +51,10 @@ With the database running and the secrets in place, you should be able to run th
  - `python manage.py migrate web`
  - `python manage.py runserver`
 
+ Here are some useful postgres shortcuts you can run: 
+
+ - `sudo -i -u postgres` (assume the postgres user)
+ - `psql` (start psql shell)
  
  ## How to run locally in docker
  
@@ -65,3 +71,5 @@ Lastly, run the below to build the image and compose up:
 ## How to deploy to AWS
 
 Run all the scripts in the deploy folder to create the S3 bucket, secrets for the git keys for the EC2 instance (add the secret values manually), the project's secrets (which you should've already done), the Route53 hosted zone for the domains and finally the script to deploy the project's stack (EC2, Load Balancer, Listeners, Security Groups, Target Group, SSL Certificates, etc).
+
+Use this command to create a bash shell in a container: `docker exec -i -t <mycontainer> /bin/bash`

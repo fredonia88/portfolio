@@ -22,11 +22,15 @@ services:
       DJANGO_EMAIL_RECIPIENT: ${DJANGO_EMAIL_RECIPIENT}
       DJANGO_RECAPTCHA_PUBLIC_KEY: ${DJANGO_RECAPTCHA_PUBLIC_KEY}
       DJANGO_RECAPTCHA_PRIVATE_KEY: ${DJANGO_RECAPTCHA_PRIVATE_KEY}
+      BLS_REGISTRATION_KEY: ${BLS_REGISTRATION_KEY}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_SERVER: ${POSTGRES_SERVER}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     networks:
       - docker_network
 
@@ -43,6 +47,11 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - docker_network
 

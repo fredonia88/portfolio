@@ -28,7 +28,7 @@
             </div>
         </div>
         <div class="col-12 col-md-4">
-            <button class="btn-small" id="start-game" style="margin-top: -10px; margin-bottom: 40px;">Start game</button>
+            <button class="btn" id="start-game" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: -10px; margin-bottom: 40px;">Start game</button>
             <div class="board-container">
                 <p id="difficulty-title" class="difficulty-title" style="display: none;font-size: 22px;">Select difficulty level:</p>
                 <div id="difficulty-options" style="display:none;">
@@ -40,8 +40,8 @@
                 <div id="message" class="win-message"></div>
             </div>
         </div>
-        <div class="col-12 col-md-4" style="padding-top: 4px;">
-            <a id="dropdownMenuButton" class="btn-small dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: 20px;">Metrics</a>
+        <div class="col-12 col-md-4">
+            <a id="dropdownMenuButton" class="btn dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: -10px;">Metrics</a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown" style="padding: 0;">
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="All">All</a></li>
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="Easy">Easy</a></li>

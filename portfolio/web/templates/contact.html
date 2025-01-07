@@ -8,7 +8,7 @@
 {% block content %}
 <body>
   <script src="{% static 'js/contact.js' %}"></script>
-  <div id="contact-form" style="margin-top: 5px; margin-left: 40px; text-align: left;">
+  <div id="contact-form" style="margin-left: 40px; margin-right: 40px; text-align: left;">
     <form class="input" method="post" action="{% url 'contact' %}">
       {% csrf_token %}
 

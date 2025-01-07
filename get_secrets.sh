@@ -46,9 +46,12 @@ else
     export DJANGO_EMAIL_RECIPIENT=$(echo $SECRET_VALUE | jq -r .DJANGO_EMAIL_RECIPIENT)
     export DJANGO_RECAPTCHA_PUBLIC_KEY=$(echo $SECRET_VALUE | jq -r .DJANGO_RECAPTCHA_PUBLIC_KEY)
     export DJANGO_RECAPTCHA_PRIVATE_KEY=$(echo $SECRET_VALUE | jq -r .DJANGO_RECAPTCHA_PRIVATE_KEY)
+    export DJANGO_DEBUG=False # overwrite in case this is set to True in .env file
     export POSTGRES_DB=$(echo $SECRET_VALUE | jq -r .POSTGRES_DB)
     export POSTGRES_USER=$(echo $SECRET_VALUE | jq -r .POSTGRES_USER)
     export POSTGRES_PASSWORD=$(echo $SECRET_VALUE | jq -r .POSTGRES_PASSWORD)
-    export DJANGO_DEBUG=False # overwrite in case this is set to True in .env file
+    export POSTGRES_SERVER=$(echo $SECRET_VALUE | jq -r .POSTGRES_SERVER)
+    export POSTGRES_PORT=$(echo $SECRET_VALUE | jq -r .POSTGRES_PORT)
+    export BLS_REGISTRATION_KEY=$(echo $SECRET_VALUE | jq -r .BLS_REGISTRATION_KEY)
     unset SECRET_VALUE
 fi

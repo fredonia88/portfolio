@@ -7,9 +7,56 @@
 
 {% block content %}
 
-<p>
-<br>
-  Coming soon!
-</p>
+<body>
+  <div class="row" style="margin-left: 40px; margin-right: 40px;">
+    <div class="col-12 col-md-12" style="text-align: left;">
+      <p>
+        This project illustrates some of the economic disparities younger generations of Americans contend with.
+        The data has been extracted from the Bureau of Labor Statistics API using Python, transformed with Polars 
+        and loaded into a Postgres database. 
+      </p>
+    </div>
+    <div class="col-12 col-md-4" style="text-align: left;">
+      <br><br>
+      <p>
+        Real income has increased modestly over time, but has this increase been evenly distributed across age groups?
+        The first chart represents the percent change in median US income by age group from 1979 to 2023, and the 
+        second chart plots the yearly values. Incomes shown are in real terms (adjusted for inflation). 
+        <br><br><br><br><br><br><br>
+        You might expect older generations to earn more; they're more experienced workers, social security kicks in as early as 62, 
+        investement strategies lean more towards income vs growth, etc. You might also expect the percent change in income 
+        over time to be relatively consistent across age groups. Meaning, the rate of change in income is more or less the same 
+        for each group.
+        <br><br><br>
+        Unfortunately, younger incomes have grown at a rate that is approximately a third of older age groups, causing actual incomes 
+        for older generations to exceed their younger peers (65 and over surpassed the 25 to 34 group in 2009).
+      </p>
+    </div>
+    <div id="chartContainer" class="col-12 col-md-8" style="flex: 1; display: flex; justify-content: center; align-items: center;">
+      <br><br>
+      <table>
+        <thead>
+          <tr>
+            <th>Demographic<br>Age</th>
+            <th>Percent Change in Median Income<br>from 1979 to 2023</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in data %}
+            <tr>
+              <td>{{ row.demographic_age }}</td>
+              <td>{{ row.percent_change_in_income }}%</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <br><br>
+      <div>
+        <canvas id="blsMedianIncomeChart" width="1100" height="800"></canvas>
+      </div>
+    </div>
+  </div>
+  <script src="{% static 'js/bls.js' %}"></script>
+</body>
 
 {% endblock %}

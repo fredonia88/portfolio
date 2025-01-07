@@ -18,3 +18,4 @@ jupyternotebooks/
 *.env
 .portfolio
 .nginx
+scripts/data/
