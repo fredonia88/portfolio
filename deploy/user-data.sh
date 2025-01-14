@@ -26,6 +26,9 @@ sudo useradd -m django
 # add django to docker group:
 sudo usermod -aG docker django
 
+# allow django to run sudo without a password:
+echo "django ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers
+
 # assume django user:
 sudo -u django -H bash << EOF
 cd ~
