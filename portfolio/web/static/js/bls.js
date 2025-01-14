@@ -4,14 +4,19 @@ fetch('/bls/chart-data')
         const ctx = document.getElementById('blsMedianIncomeChart').getContext('2d');
         new Chart(ctx, {
             type: 'line',
-            data: {datasets: datasets},
+            data: {
+                datasets: datasets.map(dataset => ({
+                    ...dataset,
+                    radius: 6 
+                }))
+            },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     title: {
                         display: true, 
-                        text: 'Median Income by Demographic Age (in constant 2023 USD)',
+                        text: 'Median Income by Demographic Age',
                         color: '#008000',
                         font: {size: 24, family: 'Fira Code'}
                     },
@@ -31,12 +36,16 @@ fetch('/bls/chart-data')
                     tooltip: {
                         callbacks: {
                             label: function(context) {
+                                const datasetLabel = context.dataset.label || '';
                                 const value = context.raw;
                                 const xValue = value.x;
                                 const yValue = Math.round(value.y);
                                 const formattedYValue = '$' + yValue.toLocaleString()
-                                const label = `Year: ${xValue}, Median Income: ${formattedYValue}`
-                                return label;
+                                return [
+                                    `${datasetLabel}`,
+                                    `Year: ${xValue}`, 
+                                    `Median Income: ${formattedYValue}`
+                                ];
                             }
                         }
                     }
