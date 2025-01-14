@@ -14,35 +14,37 @@
         var csrfToken = "{{ csrf_token }}";
         var statsUrl = "{% url 'tictactoe' %}";
     </script>
-    <div class="row">
-        <div class="col-12 col-md-4">
-            <div id="about-text" style="margin-top: 5px; margin-left: 40px; text-align: left;">
-                <p>Welcome to tic-tac-toe!
-                <br><br>
-                    This game features three difficulty levels: Easy, Intermediate and Unbeatable.
-                    The latter two levels use a minimax algorithm and alpha beta pruning to determine 
-                    the computer's move. The user will always play first. 
-                <br><br>
-                    The metrics represent all games played, and can be filtered to a specific difficulty level.
-                </p>
-            </div>
+
+    <div class="row fixed">
+        <div class="col-12">
+            <p>
+                Welcome to tic-tac-toe!
+                This game features three difficulty levels: Easy, Intermediate and Unbeatable.
+                The latter two levels use a minimax algorithm and alpha beta pruning to determine 
+                the computer's move. The user will always play first. 
+                The metrics represent all games played, and can be filtered to a specific difficulty level.
+            </p>
         </div>
-        <div class="col-12 col-md-4">
-            <button class="btn" id="start-game" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: -10px; margin-bottom: 40px;">Start game</button>
+    </div>
+
+    <div class="row justify-content-center align-items-start tictactoe">
+        <div class="col-lg-6 col-md-8 col-12">
+            <button id="start-game" class="btn" role="button" data-bs-toggle="dropdown" aria-expanded="false">Start game</button>
             <div class="board-container">
-                <p id="difficulty-title" class="difficulty-title" style="display: none;font-size: 22px;">Select difficulty level:</p>
-                <div id="difficulty-options" style="display:none;">
-                    <button class="btn" id="easy" style="font-size: 22px;">Easy</button>
-                    <button class="btn" id="intermediate" style="font-size: 22px;">Intermediate</button>
-                    <button class="btn" id="unbeatable" style="font-size: 22px;">Unbeatable</button>
+                <p id="difficulty-title">Select difficulty level:</p>
+                <div id="difficulty-options">
+                    <button id="easy" class="btn-small">Easy</button>
+                    <button id="intermediate" class="btn-small">Intermediate</button>
+                    <button id="unbeatable" class="btn-small">Unbeatable</button>
                 </div>
-                <table class="center" id="board" border="1"></table>
-                <div id="message" class="win-message"></div>
+                <table id="board" class="center" border="1"></table>
+                <div id="message"></div>
             </div>
         </div>
-        <div class="col-12 col-md-4">
-            <a id="dropdownMenuButton" class="btn dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="margin-top: -10px;">Metrics</a>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown" style="padding: 0;">
+
+        <div class="col-lg-6 col-md-8 col-12">
+            <a class="btn dropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">Metrics</a>
+                <ul id="metrics-dropdown" class="dropdown-menu" aria-labelledby="navbarDropdown">
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="All">All</a></li>
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="Easy">Easy</a></li>
                     <li><a class="dropdown-item dropdown-difficulty" href="#" difficulty-level="Intermediate">Intermediate</a></li>
