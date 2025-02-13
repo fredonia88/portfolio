@@ -2,28 +2,33 @@ package main
 
 import (
 	"fmt"
+	// "strings"
+	// "math"
+	// "math/rand"
+	// "errors"
+	// "log"
 )
 
-type child struct {
-	myNum int
+var mySquare *[]int
+var hi *myType
+
+func test() {
+	fmt.Println(mySquare)
 }
 
-func (c *child) add(n int) {
-	c.myNum += 1
+func sayHi() {
+	fmt.Println(hi)
 }
 
-type parentif interface {
-	add(n int)
-}
-
-type parent struct {
-	*child
+type myType struct {
+	hello string
 }
 
 func main() {
-	//c := &child{1}
-	x := &parent{&child{1}}
-	x.add(1)
-	//fmt.Println(c.myNum)
-	fmt.Println(x.myNum)
+	fmt.Println(mySquare)
+	mySquare = &[]int{1, 2, 3}
+	fmt.Println(mySquare)
+	test()
+	hi = &myType{"hey!"}
+	fmt.Println(hi)
 }
