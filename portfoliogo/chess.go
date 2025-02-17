@@ -121,7 +121,7 @@ type chessPiece interface {
 	color() string
 	hasMoved() bool
 	updatePosition(newRow, newCol int)
-	isValidMove(to *square, cg *chessGame) (bool, bool, error)
+	isValidMove(to *square, cg *chessGame) (bool, bool, bool, error)
 }
 
 
@@ -189,7 +189,7 @@ func (cg *chessGame) loadGame(mGame [8][8]string, mPlayer string, mWCaptured []s
 	}
 }
 
-func (cg *chessGame) inCheck(moveTo *square) (bool, error) { 
+func (cg *chessGame) inCheck(moveTo *square) (bool, error, chessPiece) { 
 	for row := 0; row < 8; row++ {
 		for col := 0; col < 8; col++ {
 			moveFrom, err := cg.getSquare(row, col)
@@ -197,12 +197,12 @@ func (cg *chessGame) inCheck(moveTo *square) (bool, error) {
 				fmt.Errorf("There was an error")
 			}
 			if moveFrom.cp != nil && (moveFrom.cp.color() != moveTo.cp.color()) {
-				canMove, _, err := moveFrom.cp.isValidMove(moveTo, cg)
-				return canMove, err
+				canMove, _, _, err := moveFrom.cp.isValidMove(moveTo, cg)
+				return canMove, err, moveFrom.cp
 			}
 		}
 	}
-	return false, nil
+	return false, nil, nil
 }
 
 func (cg *chessGame) getSquare(row, col int) (*square, error) {
@@ -276,23 +276,38 @@ func (cg *chessGame) makeMove(moveFrom, moveTo *square) {
 	}
 
 	// get the implementation of chessPiece and call its specific isValidMove 
-	if canMove, promotePawn, err := moveFrom.cp.isValidMove(moveTo, cg); canMove {
-		// update the chessPiece's position
-		moveFrom.cp.updatePosition(moveTo.row, moveTo.col)
-		// update the squares
-		moveTo.cp = moveFrom.cp
-		moveFrom.cp = nil
-		
-		// promote the pawn, if indicated
-		// if pawn reaches opposing last row, player can promote pawn to a: queen, bishop, knight, rook
-		// the pawn must be replaced
-		// the replacing piece does not have to be a captured piece, so you can have multiple queens after promoting
-		if promotePawn {
-			// will need a way to pause the game and have player select the new piece
-			majorMinor := []string{"rk","kt","bp","qn","kg"}
-			n := rand.Intn(5)
-			constructor := pieces[majorMinor[n]]
-			cg.board[moveTo.row][moveTo.col] = square{moveTo.row, moveTo.col, constructor(majorMinor[n] + "-" + moveTo.cp.color(), moveTo.row, moveTo.col)}
+	if canMove, promotePawn, castleRook, err := moveFrom.cp.isValidMove(moveTo, cg); canMove {
+		// update the chessPiece's position, first check castleRook
+		if castleRook {
+			if moveFrom.col == 0 {
+				moveFrom.cp.updatePosition(moveFrom.row, 3)
+				sq, _ := cg.getSquare(moveTo.row, 3)
+				sq.cp = moveFrom.cp
+				moveFrom.cp = nil
+			} else {
+				moveFrom.cp.updatePosition(moveFrom.row, 5)
+				sq, _ := cg.getSquare(moveTo.row, 5)
+				sq.cp = moveFrom.cp
+				moveFrom.cp = nil
+			}
+			moveFrom.cp = nil
+		} else {
+			moveFrom.cp.updatePosition(moveTo.row, moveTo.col)
+			// update the squares
+			moveTo.cp = moveFrom.cp
+			moveFrom.cp = nil
+			
+			// promote the pawn, if indicated
+			// if pawn reaches opposing last row, player can promote pawn to a: queen, bishop, knight, rook
+			// the pawn must be replaced
+			// the replacing piece does not have to be a captured piece, so you can have multiple queens after promoting
+			if promotePawn {
+				// will need a way to pause the game and have player select the new piece
+				majorMinor := []string{"rk","kt","bp","qn","kg"}
+				n := rand.Intn(5)
+				constructor := pieces[majorMinor[n]]
+				cg.board[moveTo.row][moveTo.col] = square{moveTo.row, moveTo.col, constructor(majorMinor[n] + "-" + moveTo.cp.color(), moveTo.row, moveTo.col)}
+			}
 		}
 
 	} else if err != nil {
@@ -336,7 +351,7 @@ func (b *basePiece) updatePosition(newRow, newCol int) {
 }
 
 // each piece will have its own isValidMove to evaluate its specific rules
-func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
+func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (bool, bool, bool, error) {
 	// implement isValidMove for other pieces
 	// evaluate edge cases
 	//		DONE: pawn: moving two spaces off start line
@@ -350,7 +365,7 @@ func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
 	// ensure pawn only moves forward
 	if (p.color() == "W" && moveTo.row >= p.row) || (p.color() == "B" && moveTo.row <= p.row) {
 		err := fmt.Errorf("%s can only move forward", p.fullName())
-		return false, false, err
+		return false, false, false, err
 	}
 
 	// ensure pawn only moves one row at a time, but allow two rows off starting row
@@ -360,7 +375,7 @@ func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
 			// pawn is allowed to move two spaces forward off starting row
 		} else {
 			err := fmt.Errorf("%s can only move one space at a time, or two from starting row", p.fullName())
-			return false, false, err
+			return false, false, false, err
 		}
 	}
 
@@ -390,11 +405,11 @@ func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
 			moveToPrior.cp = nil	
 		} else {
 			err := fmt.Errorf("%s cannot move laterally unless capturing or using en passant", p.fullName())
-			return false, false, err
+			return false, false, false, err
 		}
 	} else if lateral > 1 {
 		err := fmt.Errorf("%s cannot move laterally more than one square", p.fullName())
-		return false, false, err
+		return false, false, false, err
 	}
 
 	// check for pawn promotion
@@ -403,34 +418,36 @@ func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
 		promote = true
 	}
 
-	return true, promote, nil
+	return true, promote, false, nil
 }
 
-func (r *rook) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
+func (r *rook) isValidMove(moveTo *square, cg *chessGame) (bool, bool, bool, error) {
 	verticalMove := r.col == moveTo.col && r.row != moveTo.row
 	horizontalMove := r.col != moveTo.col && r.row == moveTo.row
 
 	// check if move is along a single axis and not diagonal
 	if !(verticalMove != horizontalMove) { // xor logic
 		err := fmt.Errorf("%s can only move along a single row or column", r.fullName())
-		return false, false, err
+		return false, false, false, err
 	}
 	
 	// check for collision
 	if verticalMove {
 		for i := r.row + 1; i < moveTo.row; i++ {
-			if cg.board[i][moveTo.row].cp != nil {
-				msg := fmt.Sprintf("%s collides at (%d, %d)", r.fullName(), i, r.col)
-				err := fmt.Errorf(msg)
-				return false, false, err
-			}
-		}
-	} else if horizontalMove {
-		for i := r.col + 1; i < moveTo.col; i++ {
 			if cg.board[i][moveTo.col].cp != nil {
 				msg := fmt.Sprintf("%s collides at (%d, %d)", r.fullName(), i, r.col)
 				err := fmt.Errorf(msg)
-				return false, false, err
+				return false, false, false, err
+			}
+		}
+	}
+	if horizontalMove {
+		fmt.Println("in horizontalMove")
+		for i := r.col + 1; i < moveTo.col; i++ {
+			if cg.board[moveTo.row][i].cp != nil {
+				msg := fmt.Sprintf("%s collides at (%d, %d)", r.fullName(), i, r.col)
+				err := fmt.Errorf(msg)
+				return false, false, false, err
 			}
 		}
 	}
@@ -442,6 +459,7 @@ func (r *rook) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
 	//		the spaces king moves to cannot be under attack
 	//		the spaces the king moves through cannot be under attack
 	if horizontalMove && moveTo.cp.name() == "kg" && !moveTo.cp.hasMoved() && !r.hasMoved() {
+		// evaluate if any starting, thru or ending sqaures would be in check while castling
 		squaresToEval := []*square{}
 		if r.col == 0 {
 			for col := 4; col > 1; col-- {
@@ -462,30 +480,46 @@ func (r *rook) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
 		}
 		fmt.Println("I'm going to check if you can castle!")
 		for s := range squaresToEval {
-			if canCheck, err := cg.inCheck(squaresToEval[s]); canCheck {
-				fmt.Println("This castle doesn't work")
-				return false, false, err
+			// if canCheck, err, cp := cg.inCheck(squaresToEval[s]); canCheck {
+			if 1 == 0 {
+				// fmt.Println(canCheck)
+				// fmt.Println("This castle doesn't work")
+				// fmt.Println(cp.fullName())
+				fmt.Println(squaresToEval[s])
+				// return false, false, false, err
 			}
+		}
+		// the castle is valid, move the king
+		if r.col == 0 {
+			moveTo.cp.updatePosition(moveTo.row, 2)
+			sq, _ := cg.getSquare(moveTo.row, 2)
+			sq.cp = moveTo.cp
+			moveTo.cp = nil
+		} else {
+			moveTo.cp.updatePosition(moveTo.row, 6)
+			sq, _ := cg.getSquare(moveTo.row, 6)
+			sq.cp = moveTo.cp
+			moveTo.cp = nil
 		}
 	}
 
-	return true, false, nil
+	return true, false, true, nil
 }
 
-func (k *knight) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
-	return true, false, nil
+func (k *knight) isValidMove(moveTo *square, cg *chessGame) (bool, bool, bool, error) {
+	return true, false, false, nil
 }
 
-func (b *bishop) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
-	return true, false, nil
+func (b *bishop) isValidMove(moveTo *square, cg *chessGame) (bool, bool, bool, error) {
+	return true, false, false, nil
 }
 
-func (q *queen) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
-	return true, false, nil
+func (q *queen) isValidMove(moveTo *square, cg *chessGame) (bool, bool, bool, error) {
+	return true, false, false, nil
 }
 
-func (k *king) isValidMove(moveTo *square, cg *chessGame) (bool, bool, error) {
-	return true, false, nil
+func (k *king) isValidMove(moveTo *square, cg *chessGame) (bool, bool, bool, error) {
+	return true, false, false, nil
 }
 
 
@@ -514,18 +548,28 @@ func main() {
 	// parse vars from front end and load the game
 	mCreateNewGame := false
 	mBoard := [8][8]string{
-		{"rk-B-0", "kt-B-0", "bp-B-0", "qn-B-0", "kg-B-0", "  e-  ", "  e-  ", "rk-B-0"},
-		{"pn-B-0", "pn-B-0", "pn-B-0", "pn-B-0", "pn-B-0", "pn-B-0", "  e-  ", "pn-B-0"},
-		{"  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "kt-B-1"},
-		{"  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "pn-B-1", "bp-B-1"},
+		{"rk-B-0", "  e-  ", "  e-  ", "  e-  ", "kg-B-0", "bp-B-1", "kt-B-1", "rk-B-0"},
+		{"pn-B-0", "pn-B-0", "pn-B-0", "qn-B-0", "pn-B-0", "pn-B-0", "  e-  ", "pn-B-0"},
+		{"kt-B-0", "  e-  ", "  e-  ", "pn-B-0", "bp-B-0", "  e-  ", "  e-  ", "  e-  "},
+		{"  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "pn-B-1", "  e-  "},
 		{"qn-W-1", "  e-  ", "pn-W-1", "pn-W-1", "  e-  ", "  e-  ", "  e-  ", "  e-  "},
-		{"  e-  ", "  e-  ", "  e-  ", "  e-  ", "bp-W-1", "  e-  ", "  e-  ", "  e-  "},
-		{"pn-W-0", "pn-W-0", "  e-  ", "  e-  ", "pn-W-0", "pn-W-0", "pn-W-0", "pn-W-0"},
-		{"rk-W-0", "kt-W-0", "  e-  ", "  e-  ", "kg-W-0", "bp-W-0", "kt-W-0", "rk-W-0"},
+		{"  e-  ", "pn-W-0", "  e-  ", "  e-  ", "bp-W-1", "bp-W-0", "kt-W-0", "  e-  "},
+		{"pn-W-0", "  e-  ", "  e-  ", "  e-  ", "pn-W-0", "pn-W-0", "pn-W-0", "pn-W-0"},
+		{"rk-W-0", "kt-W-0", "  e-  ", "  e-  ", "kg-W-0", "  e-  ", "  e-  ", "rk-W-0"},
 	}
-	mPlayer := "Computer" // User or Computer
-	mMoveFrom := []int{0, 7}
-	mMoveTo := []int{0, 4}
+	/*
+		{"rk-B-0", "kt-B-0", "bp-B-0", "qn-B-0", "kg-B-0", "bp-B-0", "kt-B-0", "rk-B-0"},
+		{"pn-B-0", "pn-B-0", "pn-B-0", "qn-B-0", "pn-B-0", "pn-B-0", "pn-B-0", "pn-B-0"},
+		{"  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  "},
+		{"  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  "},
+		{"  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  "},
+		{"  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  ", "  e-  "},
+		{"pn-W-0", "pn-W-0", "pn-W-0", "pn-W-0", "pn-W-0", "pn-W-0", "pn-W-0", "pn-W-0"},
+		{"rk-W-0", "kt-W-0", "bp-W-0", "qn-W-0", "kg-W-0", "bp-W-0", "kt-W-0", "rk-W-0"},
+	*/
+	mPlayer := "User" // User or Computer
+	mMoveFrom := []int{7, 7}
+	mMoveTo := []int{7, 4}
 	mMoveFromPrior := [2]int{7, 2}
 	mMoveToPrior := [2]int{5, 4}
 	mWCaptured := []string{}
@@ -571,5 +615,6 @@ func main() {
 		cg.displayBoard()
 		fmt.Println()
 		cg.displayCapturedPieces()
+		//cg.displayBoardPositions()
 	}
 }
