@@ -95,20 +95,13 @@ func (cg *chessGame) inCheck(moveTo *square) (bool, error, chessPiece) {
 	}
 	visitedSquare[moveTo] = true
 
-	fmt.Println("evaluating this square in inCheck")
-	fmt.Println(moveTo.row, moveTo.col)
-
 	for row := 0; row < 8; row++ {
 		for col := 0; col < 8; col++ {
 			moveFrom, err := cg.getSquare(row, col)
-			fmt.Println("This is the square that will checking")
-			fmt.Println(row, col)
 			if err != nil {
 				fmt.Errorf("There was an error")
 			}
 			if moveFrom.cp != nil && (moveFrom.cp.color() != cg.player) {
-				fmt.Println("checking isValidMove for this piece %d", moveFrom.cp.fullName())
-				fmt.Println(moveTo)
 				canMove, _, _, _, err := moveFrom.cp.isValidMove(moveTo, cg)
 				if canMove {
 					err = fmt.Errorf("King will be in check!")

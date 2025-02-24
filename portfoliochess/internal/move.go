@@ -47,7 +47,8 @@ func (cg *chessGame) castleThruSquares(moveFromRow, moveFromCol, moveToCol int, 
 
 	for col := 4; col != endCol; col = col+colStep {
 		sq, sqErr := cg.getSquare(moveFromRow, col)
-		if sqErr != nil {
+		if sq != nil {
+			newChessError(errCollision, )
 			msg := fmt.Sprintf("%s collides at (%d, %d)", moveFromFullName, moveFromRow, col)
 			err = fmt.Errorf(msg)
 			return
@@ -275,8 +276,15 @@ func (r *rook) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 	}
 
 	// check if castling
-	if isHorizontalOnly && moveTo.cp != nil && moveTo.cp.name() == "kg" && r.color() == moveTo.cp.color() && 
-		!moveTo.cp.hasMoved() && !r.hasMoved() {
+	if isHorizontalOnly && moveTo.cp != nil && moveTo.cp.name() == "kg" && r.color() == moveTo.cp.color() {
+		
+		if moveTo.cp.hasMoved() {
+			err = fmt.Errorf("%s has moved, castling is not allowed", moveTo.cp.fullName())
+			return
+		} else if r.hasMoved() {
+			err = fmt.Errorf("%s has moved, castling is not allowed", r.fullName())
+			return
+		}
 		
 		squaresToEval, _ := cg.castleThruSquares(r.row, r.col, moveTo.col, r.fullName())
 		
@@ -376,8 +384,15 @@ func (k *king) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 	canMove, enPassant, promotePawn, canCastle = false, false, false, false
 	setChessMove(k.row, k.col, moveTo)
 
-	if isHorizontalOnly && moveTo.cp != nil && moveTo.cp.name() == "rk" && k.color() == moveTo.cp.color() && 
-		!moveTo.cp.hasMoved() && !k.hasMoved() {
+	if isHorizontalOnly && moveTo.cp != nil && moveTo.cp.name() == "rk" && k.color() == moveTo.cp.color() {
+
+		if moveTo.cp.hasMoved() {
+			err = fmt.Errorf("%s has moved, castling is not allowed", moveTo.cp.fullName())
+			return
+		} else if k.hasMoved() {
+			err = fmt.Errorf("%s has moved, castling is not allowed", k.fullName())
+			return
+		}
 		
 		squaresToEval, _ := cg.castleThruSquares(k.row, k.col, moveTo.col, k.fullName())
 		
