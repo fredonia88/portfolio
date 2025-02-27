@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -25,34 +24,36 @@ type square struct {
 	cp chessPiece
 }
 
-func (cg *chessGame) newGame() {
+func (cg *chessGame) newGame() (err error) {
 	majorMinor := []string{"rk","kt","bp","qn","kg","bp","kt","rk"}
 	for i := 0; i < 8; i++ {
 
-		if constructor, found := pieces[majorMinor[i]]; !found {
-			err := fmt.Errorf("piece type '%s' not found in map", majorMinor[i])
-			log.Fatal("Error:", err)
-		} else {
-			cg.board[0][i] = square{0, i, constructor(majorMinor[i] + "-B-0", 0, i)}
-			cg.board[7][i] = square{7, i, constructor(majorMinor[i] + "-W-0", 7, i)}
+		majorMinorConstructor, majorMinorErr := getPieceConstructor(majorMinor[i])
+		if majorMinorErr != nil {
+			err = majorMinorErr
+			return
 		}
+		cg.board[0][i] = square{0, i, majorMinorConstructor(majorMinor[i] + "-B-0", 0, i)}
+		cg.board[7][i] = square{7, i, majorMinorConstructor(majorMinor[i] + "-W-0", 7, i)}
 
-		if constructor, found := pieces["pn"]; !found {
-			err := fmt.Errorf("piece type 'pn' not found in map")
-			log.Fatal("Error:", err)
-		} else {
-			cg.board[1][i] = square{1, i, constructor("pn-B-0", 1, i)}
-			cg.board[6][i] = square{6, i, constructor("pn-W-0", 6, i)}
+		pawnConstructor, pawnErr := getPieceConstructor("pn")
+		if pawnErr != nil {
+			err = pawnErr
+			return
 		}
+		cg.board[1][i] = square{1, i, pawnConstructor("pn-B-0", 1, i)}
+		cg.board[6][i] = square{6, i, pawnConstructor("pn-W-0", 6, i)}
 
 		cg.board[2][i] = square{2, i, nil}
 		cg.board[3][i] = square{2, i, nil}
 		cg.board[4][i] = square{2, i, nil}
 		cg.board[5][i] = square{2, i, nil}
 	}
+
+	return
 }
 
-func (cg *chessGame) loadGame(mGame [8][8]string, mPlayer string, mWCaptured []string, mBCaptured []string) {
+func (cg *chessGame) loadGame(mGame [8][8]string, mPlayer string, mWCaptured []string, mBCaptured []string) (err error) {
 	cg.player = mPlayer
 	for row := range mGame {
 		for col := range mGame[row] {
@@ -63,10 +64,10 @@ func (cg *chessGame) loadGame(mGame [8][8]string, mPlayer string, mWCaptured []s
 				continue
 			}
 			
-			constructor, found := pieces[piece] 
-			if !found {
-				err := fmt.Errorf("Piece not found in pieces map %s", mGame[row][col])
-				log.Fatal("Error:", err)
+			constructor, conErr := getPieceConstructor(piece)
+			if conErr != nil {
+				err = conErr
+				return
 			}
 			
 			cg.board[row][col] = square{row, col, constructor(mGame[row][col], row, col)}
@@ -76,22 +77,32 @@ func (cg *chessGame) loadGame(mGame [8][8]string, mPlayer string, mWCaptured []s
 	// load captured pieces
 	for _, p := range mWCaptured {
 		piece := strings.TrimSpace(strings.Split(p, "-")[0])
-		constructor, _ := getPieceConstructor(piece)
+		constructor, conErr := getPieceConstructor(piece)
+		if conErr != nil {
+			err = conErr
+			return
+		}
 		cg.wCaptured = append(cg.wCaptured, constructor(p, -1, -1))
 	}
 
 	for _, p := range mBCaptured {
 		piece := strings.TrimSpace(strings.Split(p, "-")[0])
-		constructor, _ := getPieceConstructor(piece)
+		constructor, conErr := getPieceConstructor(piece)
+		if conErr != nil {
+			err = conErr
+			return
+		}
 		cg.bCaptured = append(cg.bCaptured, constructor(p, -1, -1))
 	}
+	
+	return 
 }
 
 var visitedSquare = make(map[*square]bool)
 
-func (cg *chessGame) inCheck(moveTo *square) (bool, error, chessPiece) { 
+func (cg *chessGame) inCheck(moveTo *square) (error, chessPiece) { 
 	if visitedSquare[moveTo] {
-		return false, nil, nil
+		return nil, nil
 	}
 	visitedSquare[moveTo] = true
 
@@ -102,20 +113,20 @@ func (cg *chessGame) inCheck(moveTo *square) (bool, error, chessPiece) {
 				fmt.Errorf("There was an error")
 			}
 			if moveFrom.cp != nil && (moveFrom.cp.color() != cg.player) {
-				canMove, _, _, _, err := moveFrom.cp.isValidMove(moveTo, cg)
-				if canMove {
+				_, _, _, err := moveFrom.cp.isValidMove(moveTo, cg)
+				if err == nil {
 					err = fmt.Errorf("King will be in check!")
-					return canMove, err, moveFrom.cp
+					return err, moveFrom.cp
 				}
 			}
 		}
 	}
-	return false, nil, nil
+	return nil, nil
 }
 
 func (cg *chessGame) getSquare(row, col int) (*square, error) {
 	if row > 7 || row < 0 || col > 7 || col < 0 {
-		return &square{}, fmt.Errorf("Square is out of range: %d %d", row, col)
+		return &square{}, newChessError(errOutOfRange, "Selected square (%d %d) is out of range", row, col)
 	}
 	return &cg.board[row][col], nil
 }

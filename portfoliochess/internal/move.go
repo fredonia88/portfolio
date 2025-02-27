@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"math/rand"
 )
 
 /*
 	TODO:
-		1. Need a more elegant way to handle errors
-		2. Check for checkmate
+		1. Check for checkmate
+		2. Create an actual game in the console. 
+			a. Need a way to keep track of game state (potentially start writing to and from db)
+			b. Need a way for computer to make moves (can be random at first)
+		3. Need to build mini max algo for computer
 */ 
 
 var verticalDistance int
@@ -47,11 +49,8 @@ func (cg *chessGame) castleThruSquares(moveFromRow, moveFromCol, moveToCol int, 
 
 	for col := 4; col != endCol; col = col+colStep {
 		sq, sqErr := cg.getSquare(moveFromRow, col)
-		if sq != nil {
-			newChessError(errCollision, )
-			msg := fmt.Sprintf("%s collides at (%d, %d)", moveFromFullName, moveFromRow, col)
-			err = fmt.Errorf(msg)
-			return
+		if sqErr != nil {
+			return nil, sqErr
 		}
 		squaresToEval = append(squaresToEval, sq)
 	}
@@ -138,18 +137,19 @@ func (cg *chessGame) checkCollision(moveFromRow, moveFromCol, moveToRow, moveToC
 	return
 }
 
-func (cg *chessGame) makeMove(moveFrom, moveTo *square) {
+func (cg *chessGame) makeMove(moveFrom, moveTo *square) (err error) {
 
 	// does the moveFrom square contain a chessPiece?
 	if moveFrom.cp == nil {
-		err := fmt.Errorf("This square is empty. Choose a square with your piece")
-		log.Fatal("Error:", err)
+		err = newChessError(errEmptySquare, "Square (%d %d) is empty. Choose a square with your piece", moveFrom.row, moveFrom.col)
+		return
 	}
 
 	// does the basePiece belong to the player?
 	if !(cg.player == moveFrom.cp.color()) {
-		err := fmt.Errorf("%s cannot move %s color pieces", cg.player, moveFrom.cp.color())
-		log.Fatal("Error:", err)
+		err = newChessError(errOccupiedSquare, "Square (%d %d) is occupied by %s. %s cannot move %s pieces. Choose a square with your piece", 
+			moveFrom.row, moveFrom.col, moveFrom.cp.fullName(), cg.player, moveFrom.cp.color())
+		return
 	}
 
 	// is the moveTo square occupied by the current player's piece?
@@ -159,13 +159,16 @@ func (cg *chessGame) makeMove(moveFrom, moveTo *square) {
 
 		// raise error if the move doesn't look like a castle
 		if !((moveToName == "kg" && moveFromName == "rk") || (moveToName == "rk" && moveFromName == "kg")) {
-			err := fmt.Errorf("moveTo square is occupied with: %s", moveTo.cp.fullName())
-			log.Fatal("Error:", err)
+
+			err = newChessError(errOccupiedSquare, "Square (%d %d) is occupied by your piece %s. Choose a valid square to move to.", 
+				moveTo.row, moveTo.col, moveFrom.cp.fullName())
+			return
 		}
 	}
 
 	// get the implementation of chessPiece and call its specific isValidMove 
-	if canMove, enPassant, promotePawn, canCastle, err := moveFrom.cp.isValidMove(moveTo, cg); canMove {
+	enPassant, promotePawn, canCastle, err := moveFrom.cp.isValidMove(moveTo, cg)
+	if err == nil {
 		
 		// if canCastle, then castle
 		if canCastle {
@@ -193,20 +196,20 @@ func (cg *chessGame) makeMove(moveFrom, moveTo *square) {
 				cg.promotePawn(moveTo)
 			}
 		}
-	} else if err != nil {
-		log.Fatal("Error:", err)
 	}
+
+	return
 }
 
-func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, promotePawn, canCastle bool, err error) {
+func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePawn, canCastle bool, err error) {
 
 	// set named return values and chessMove vars
-	canMove, enPassant, promotePawn, canCastle = false, false, false, false
+	enPassant, promotePawn, canCastle = false, false, false
 	setChessMove(p.row, p.col, moveTo)
 
 	// ensure pawn only moves forward
 	if (p.color() == "W" && moveTo.row >= p.row) || (p.color() == "B" && moveTo.row <= p.row) {
-		err = fmt.Errorf("%s can only move forward", p.fullName())
+		err = newChessError(errInvalidMove, "Pawns can only move forward.")
 		return
 	}
 
@@ -216,7 +219,7 @@ func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 		if advance == 2 && (p.row == 1 || p.row == 6) {
 			// pawn is allowed to move two spaces forward off starting row
 		} else {
-			err = fmt.Errorf("%s can only move one space at a time, or two from starting row", p.fullName())
+			err = newChessError(errInvalidMove, "Pawns can only move one space at a time, unless moving two spaces from starting row.")
 			return
 		}
 	}
@@ -232,7 +235,6 @@ func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 
 		// pawn is allowed to capture opponent's pieces
 		if moveTo.cp != nil && moveTo.cp.color() != p.color() {
-			canMove = true
 			return 
 
 		// evaluate en passant
@@ -241,31 +243,28 @@ func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 			abs(moveToPrior.row - moveFromPrior.row) == 2 &&
 			moveToPrior.row == p.row &&
 			moveToPrior.col == moveTo.col) {
-				canMove = true
 				enPassant = true
 				return 
 		} else {
-			err = fmt.Errorf("%s cannot move laterally unless capturing or using en passant", p.fullName())
+			err = newChessError(errInvalidMove, "Pawns cannot move laterally unless capturing")
 			return
 		}
 	} else if lateral > 1 {
-		err = fmt.Errorf("%s cannot move laterally more than one square", p.fullName())
+		err = newChessError(errInvalidMove, "Pawns cannot move laterally more than one square")
 		return
 	}
-
-	canMove = true
 
 	return
 }
 
-func (r *rook) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, promotePawn, canCastle bool, err error) {
+func (r *rook) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePawn, canCastle bool, err error) {
 
 	// set named return values and chessMove vars
-	canMove, enPassant, promotePawn, canCastle = false, false, false, false
+	enPassant, promotePawn, canCastle = false, false, false
 	setChessMove(r.row, r.col, moveTo)
 
 	if !(isVerticalOnly != isHorizontalOnly) { // xor logic
-		err = fmt.Errorf("%s can only move along a single row or column", r.fullName())
+		err = newChessError(errInvalidMove, "Rook can only move along a single row or column")
 		return
 	}
 	
@@ -278,11 +277,22 @@ func (r *rook) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 	// check if castling
 	if isHorizontalOnly && moveTo.cp != nil && moveTo.cp.name() == "kg" && r.color() == moveTo.cp.color() {
 		
-		if moveTo.cp.hasMoved() {
-			err = fmt.Errorf("%s has moved, castling is not allowed", moveTo.cp.fullName())
+		hasMovedKing, hasMovedKingErr := moveTo.cp.hasMoved()
+		if hasMovedKingErr != nil {
+			err = hasMovedKingErr
 			return
-		} else if r.hasMoved() {
-			err = fmt.Errorf("%s has moved, castling is not allowed", r.fullName())
+		} 
+		if hasMovedKing {
+			err = newChessError(errInvalidMove, "King has previously moved, so rooks are ineligible to castle")
+			return
+		} 
+		hasMovedRook, hasMovedRookErr := r.hasMoved()
+		if hasMovedRookErr != nil {
+			err = hasMovedRookErr
+			return
+		}
+		if hasMovedRook {
+			err = newChessError(errInvalidMove, "This rook has previously moved, so it is ineligible to castle")
 			return
 		}
 		
@@ -290,7 +300,7 @@ func (r *rook) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 		
 		// check if any squaresToEval would be in check
 		for s := range squaresToEval {
-			if canCheck, inCheckErr, _ := cg.inCheck(squaresToEval[s]); canCheck {
+			if inCheckErr, _ := cg.inCheck(squaresToEval[s]); inCheckErr != nil {
 				err = inCheckErr
 				return
 			}
@@ -300,15 +310,13 @@ func (r *rook) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 		canCastle = true
 	}
 
-	canMove = true 
-
 	return
 }
 
-func (k *knight) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, promotePawn, canCastle bool, err error) {
+func (k *knight) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePawn, canCastle bool, err error) {
 
 	// set named return values and chessMove vars
-	canMove, enPassant, promotePawn, canCastle = false, false, false, false
+	enPassant, promotePawn, canCastle = false, false, false
 	setChessMove(k.row, k.col, moveTo)
 
 	verticalMove := abs(verticalDistance)
@@ -316,26 +324,24 @@ func (k *knight) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant,
 
 	// knight can only move 3 squares; 2 vertical and 1 lateral, or 1 vertical and 2 lateral
 	if !((verticalMove == 2 && horizontalDistance == 1) || (verticalMove == 1 && horizontalMove == 2)) {
-		err = fmt.Errorf("%s must move vertically and horizontally, and can only move a total of 3 squares", k.fullName())
+		err = newChessError(errInvalidMove, "Knights must move both vertically and horizontally, and a total of 3 squares")
 		return
 	}
 
 	// makeMove checks moveTo is nil or occuppied by opponent -- no need to call checkCollision here
 
-	canMove = true
-
 	return
 }
 
-func (b *bishop) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, promotePawn, canCastle bool, err error) {
+func (b *bishop) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePawn, canCastle bool, err error) {
 
 	// set named return values and chessMove vars
-	canMove, enPassant, promotePawn, canCastle = false, false, false, false
+	enPassant, promotePawn, canCastle = false, false, false
 	setChessMove(b.row, b.col, moveTo)
 
 	// bishop must move the same number of squares both vertically and horizontally
 	if !isValidDiagonal {
-		err = fmt.Errorf("%s must move vertically and horizontally the same number of squares", b.fullName())
+		err = newChessError(errInvalidMove, "Bishops must move both vertically and horizontally the same number of squares")
 		return
 	}
 
@@ -344,27 +350,23 @@ func (b *bishop) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant,
 		err = collideErr 
 		return
 	}
-	
-	canMove = true
 
 	return
 }
 
-func (q *queen) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, promotePawn, canCastle bool, err error) {
+func (q *queen) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePawn, canCastle bool, err error) {
 
 	// set named return values and chessMove vars
-	canMove, enPassant, promotePawn, canCastle = false, false, false, false
+	enPassant, promotePawn, canCastle = false, false, false
 	setChessMove(q.row, q.col, moveTo)
 
 	if !(isVerticalOnly != isHorizontalOnly) {
 
 		// check diagonal movement
 		if !isValidDiagonal {
-			err = fmt.Errorf("If %s moves diagonally, it must move vertically and horizontally the same number of squares", q.fullName())
+			err = newChessError(errInvalidMove, "When moving vertically and horizontally, queens must move the same number of squares")
 			return
 		}
-		err = fmt.Errorf("%s can only move along a single row or column", q.fullName())
-		return
 	}
 
 	// check for collision
@@ -373,24 +375,33 @@ func (q *queen) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, 
 		return
 	}
 
-	canMove = true
-
 	return 
 }
 
-func (k *king) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, promotePawn, canCastle bool, err error) {
+func (k *king) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePawn, canCastle bool, err error) {
 
 	// set named return values and chessMove vars
-	canMove, enPassant, promotePawn, canCastle = false, false, false, false
+	enPassant, promotePawn, canCastle = false, false, false
 	setChessMove(k.row, k.col, moveTo)
 
 	if isHorizontalOnly && moveTo.cp != nil && moveTo.cp.name() == "rk" && k.color() == moveTo.cp.color() {
 
-		if moveTo.cp.hasMoved() {
-			err = fmt.Errorf("%s has moved, castling is not allowed", moveTo.cp.fullName())
+		hasMovedRook, hasMovedRookErr := moveTo.cp.hasMoved()
+		if hasMovedRookErr != nil {
+			err = hasMovedRookErr
 			return
-		} else if k.hasMoved() {
-			err = fmt.Errorf("%s has moved, castling is not allowed", k.fullName())
+		} 
+		if hasMovedRook {
+			err = newChessError(errInvalidMove, "This rook has previously moved, so it is ineligible to castle")
+			return
+		} 
+		hasMovedKing, hasMovedKingErr := k.hasMoved()
+		if hasMovedKingErr != nil {
+			err = hasMovedKingErr
+			return
+		}
+		if hasMovedKing {
+			err = newChessError(errInvalidMove, "King has previously moved, so it is ineligible to castle")
 			return
 		}
 		
@@ -398,7 +409,7 @@ func (k *king) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 		
 		// check if any squaresToEval would be in check
 		for s := range squaresToEval {
-			if canCheck, inCheckErr, _ := cg.inCheck(squaresToEval[s]); canCheck {
+			if inCheckErr, _ := cg.inCheck(squaresToEval[s]); inCheckErr != nil {
 				err = inCheckErr
 				return
 			}
@@ -408,18 +419,16 @@ func (k *king) isValidMove(moveTo *square, cg *chessGame) (canMove, enPassant, p
 		canCastle = true
 	} else {
 
-		if canCheck, inCheckErr, _ := cg.inCheck(moveTo); canCheck {
+		if inCheckErr, _ := cg.inCheck(moveTo); inCheckErr != nil {
 			err = inCheckErr
 			return
 		}
 
 		if (abs(verticalDistance) > 1 || abs(horizontalDistance) > 1) {
-			err = fmt.Errorf("%s can only move one square at a time", k.fullName())
+			err = newChessError(errInvalidMove, "Kings can only move one square at a time, unless castling")
 			return
 		}
 	}
-
-	canMove = true
 
 	return
 }

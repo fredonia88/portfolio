@@ -1,8 +1,6 @@
 package main 
 
 import (
-	"fmt"
-	"log"
 	"strings"
 	"strconv"
 )
@@ -63,9 +61,9 @@ type chessPiece interface {
 	fullName() string
 	name() string
 	color() string
-	hasMoved() bool
+	hasMoved() (bool, error)
 	updatePosition(newRow, newCol int)
-	isValidMove(to *square, cg *chessGame) (bool, bool, bool, bool, error)
+	isValidMove(to *square, cg *chessGame) (bool, bool, bool, error)
 }
 
 func (b *basePiece) fullName() string {
@@ -80,14 +78,13 @@ func (b *basePiece) color() string {
 	return strings.Split(b.piece, "-")[1]
 }
 
-func (b *basePiece) hasMoved() bool {
+func (b *basePiece) hasMoved() (hasMoved bool, err error) {
 	boolStr := strings.Split(b.piece, "-")[2]
-	hasMoved, err := strconv.ParseBool(boolStr)
-		if err != nil {
-			err := fmt.Errorf("Error converting '%s' to bool: %v\n", boolStr, err)
-			log.Fatal("Error:", err)
-		}
-	return hasMoved
+	hasMoved, err = strconv.ParseBool(boolStr)
+	if err != nil {
+		err = newChessError(errHasMovedConversion, "Error converting '%s' to bool: %v\n", boolStr, err)
+	}
+	return
 }
 
 func (b *basePiece) updatePosition(newRow, newCol int) {
@@ -96,11 +93,10 @@ func (b *basePiece) updatePosition(newRow, newCol int) {
 }
 
 // helper function to retrieve piece constructor from pieces factory 
-func getPieceConstructor(piece string) (func(string, int, int) chessPiece, error) {
+func getPieceConstructor(piece string) (constructor func(string, int, int) chessPiece, err error) {
 	constructor, found := pieces[piece] 
 	if !found {
-		err := fmt.Errorf("%s not found in pieces factory", piece)
-		log.Fatal("Error:", err)
+		err = newChessError(errMissingPiece, "%s not found in pieces factory", piece)
 	}
-	return constructor, nil
+	return
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 )
 
 func main() {
@@ -46,40 +45,49 @@ func main() {
 	mBCaptured := []string{"pn-B-0"}
 	
 	if mCreateNewGame {
-		cg.newGame()
+		err = cg.newGame()
+		if err != nil {
+			handleError(err)
+		}
 		fmt.Println()
 		fmt.Println("New game:")
 		cg.displayBoard()
 	} else {
-		cg.loadGame(mBoard, mPlayer, mWCaptured, mBCaptured)
+		err = cg.loadGame(mBoard, mPlayer, mWCaptured, mBCaptured)
+		if err != nil {
+			handleError(err)
+		}
 		fmt.Println()
 		fmt.Println("Game loaded:")
 		cg.displayBoard()
 
 		moveFromPrior, err = cg.getSquare(mMoveFromPrior[0], mMoveFromPrior[1])
 		if err != nil {
-			log.Fatal("Error:", err)
+			handleError(err)
 		}
 
 		moveToPrior, err = cg.getSquare(mMoveToPrior[0], mMoveToPrior[1])
 		if err != nil {
-			log.Fatal("Error:", err)
+			handleError(err)
 		}
 
 		moveFrom, err := cg.getSquare(mMoveFrom[0], mMoveFrom[1])
 		if err != nil {
-			log.Fatal("Error:", err)
+			handleError(err)
 		}
 
 		moveTo, err := cg.getSquare(mMoveTo[0], mMoveTo[1])
 		if err != nil {
-			log.Fatal("Error:", err)
+			handleError(err)
 		}
 
 		fmt.Println()
 		msg := fmt.Sprintf("Attempting move from (%d, %d) to (%d, %d)", moveFrom.row, moveFrom.col, moveTo.row, moveTo.col)
 		fmt.Println(msg)
-		cg.makeMove(moveFrom, moveTo)
+		err = cg.makeMove(moveFrom, moveTo)
+		if err != nil {
+			handleError(err)
+		}
 		fmt.Println()
 		fmt.Println("Board after move:")
 		cg.displayBoard()

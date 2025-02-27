@@ -3,25 +3,48 @@ package main
 import (
 	"fmt"
 	"errors"
+	"runtime"
+	"strings"
+	"log"
 )
 
 var (
-	errCollision = errors.New("Your piece %d collides with %d at (%d, %d)")
+	errCollision = errors.New("COLLISION")
+	errOutOfRange = errors.New("OUT_OF_RANGE")
+	errEmptySquare = errors.New("EMPTY_SQUARE")
+	errOccupiedSquare = errors.New("OCCUPIED_SQUARE")
+	errInvalidMove = errors.New("INVALID_MOVE")
+	errHasMovedConversion = errors.New("HAS_MOVED_CONVERSION")
+	errMissingPiece = errors.New("MISSING_PIECE")
 )
 
 type chessError struct {
-	code error
+	details error
 	message string
+	file string
+	line int
+}
+
+func handleError(err error) {
+	if err != nil {
+		log.Fatal("Error ", err)
+	}
 }
 
 func (e *chessError) Error() string {
-	return fmt.Sprintf("[%s]: %s", e.code, e.message)
+	return fmt.Sprintf("[%v]: %s (%s: %d)", e.details, e.message, e.file, e.line)
 }
 
-func newChessError(code error, message string, args ...interface{}) error {
+func newChessError(details error, message string, args ...interface{}) error {
+	_, file, line, _ := runtime.Caller(1)
+	subdirs := strings.Split(file, "/")
+	file = subdirs[len(subdirs)-1]
+
 	return &chessError{
-		code, 
+		details,
 		fmt.Sprintf(message, args...),
+		file,
+		line,
 	}
 }
 
