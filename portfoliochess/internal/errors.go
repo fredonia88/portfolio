@@ -16,6 +16,7 @@ var (
 	errInvalidMove = errors.New("INVALID_MOVE")
 	errHasMovedConversion = errors.New("HAS_MOVED_CONVERSION")
 	errMissingPiece = errors.New("MISSING_PIECE")
+	errInCheck = errors.New("IN_CHECK")
 )
 
 type chessError struct {

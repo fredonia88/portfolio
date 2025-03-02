@@ -35,10 +35,10 @@ func abs(x int) int {
 	return x
 }
 
-func (cg *chessGame) castleThruSquares(moveFromRow, moveFromCol, moveToCol int, moveFromFullName string) (squaresToEval []*square, err error) {
+func (cg *chessGame) evalCastle(moveFromRow, moveFromCol, moveToCol int, moveFromFullName string) (err error) {
 
 	// collect all squares the king would start at, move through or end on while castling
-	squaresToEval = make([]*square, 0, 3)
+	squaresToEval := make([]*square, 0, 3)
 
 	endCol := 1
 	colStep := -1
@@ -50,11 +50,70 @@ func (cg *chessGame) castleThruSquares(moveFromRow, moveFromCol, moveToCol int, 
 	for col := 4; col != endCol; col = col+colStep {
 		sq, sqErr := cg.getSquare(moveFromRow, col)
 		if sqErr != nil {
-			return nil, sqErr
+			err = sqErr
+			return
 		}
 		squaresToEval = append(squaresToEval, sq)
 	}
 
+	evalCastleSquaresErr := cg.evalCastleSquares(squaresToEval)
+	if evalCastleSquaresErr != nil {
+		err = evalCastleSquaresErr
+		return
+	}
+
+	return
+}
+
+func (cg *chessGame) evalCastleSquares(squaresToEval []*square) (err error) {
+
+	// create a simulated board
+	cgSim, err := cg.cloneGame()
+	if err != nil {
+		return
+	}
+	
+	// vars to hold the king's row and col
+	kingRow := 0
+	if cg.player == "W" {
+		kingRow = 7
+	}
+	kingCol := 4
+
+	kingSq, kingSqErr := cgSim.getSquare(kingRow, kingCol); 
+	if kingSqErr != nil {
+		err = kingSqErr
+		return
+	}
+
+	for i, sq := range squaresToEval {
+		if i == 0 {
+			if inCheckErr, _ := cgSim.inCheck(sq); inCheckErr != nil {
+				err = inCheckErr
+				return
+			}
+		} else {
+			kingSim, kingSimErr := cgSim.getSquare(sq.row, sq.col) 
+			if kingSimErr != nil {
+				err = kingSimErr
+				return
+			}
+			
+			kingSq.cp.updatePosition(sq.row, sq.col)
+			kingSim.cp = kingSq.cp
+			kingSq.cp = nil
+
+			if inCheckErr, _ := cgSim.inCheck(kingSim); inCheckErr != nil {
+				err = inCheckErr
+				return
+			}
+
+			// move the king back
+			kingSim.cp.updatePosition(kingRow, kingCol)
+			kingSq.cp = kingSim.cp
+			kingSim.cp = nil
+		}
+	}
 	return
 }
 
@@ -296,14 +355,10 @@ func (r *rook) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePaw
 			return
 		}
 		
-		squaresToEval, _ := cg.castleThruSquares(r.row, r.col, moveTo.col, r.fullName())
-		
-		// check if any squaresToEval would be in check
-		for s := range squaresToEval {
-			if inCheckErr, _ := cg.inCheck(squaresToEval[s]); inCheckErr != nil {
-				err = inCheckErr
-				return
-			}
+		evalCastleErr := cg.evalCastle(r.row, r.col, moveTo.col, r.fullName())
+		if evalCastleErr != nil {
+			err = evalCastleErr
+			return 
 		}
 
 		// the rook can castle
@@ -405,14 +460,10 @@ func (k *king) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePaw
 			return
 		}
 		
-		squaresToEval, _ := cg.castleThruSquares(k.row, k.col, moveTo.col, k.fullName())
-		
-		// check if any squaresToEval would be in check
-		for s := range squaresToEval {
-			if inCheckErr, _ := cg.inCheck(squaresToEval[s]); inCheckErr != nil {
-				err = inCheckErr
-				return
-			}
+		evalCastleErr := cg.evalCastle(k.row, k.col, moveTo.col, k.fullName())
+		if evalCastleErr != nil {
+			err = evalCastleErr
+			return 
 		}
 
 		// the king can castle

@@ -24,6 +24,17 @@ type square struct {
 	cp chessPiece
 }
 
+func initGame() *chessGame {
+	var board [8][8]square
+	var player string
+	var wCaptured []chessPiece
+	var bCaptured []chessPiece
+
+	cg := &chessGame{board, player, wCaptured, bCaptured}
+
+	return cg
+}
+
 func (cg *chessGame) newGame() (err error) {
 	majorMinor := []string{"rk","kt","bp","qn","kg","bp","kt","rk"}
 	for i := 0; i < 8; i++ {
@@ -98,30 +109,70 @@ func (cg *chessGame) loadGame(mGame [8][8]string, mPlayer string, mWCaptured []s
 	return 
 }
 
+func (cg *chessGame) unloadGame() (board [8][8]string, player string, wCaptured []string, bCaptured []string) {
+	for row := range cg.board {
+		for col := range cg.board[row] {
+			cp := cg.board[row][col].cp
+			if cp == nil {
+				board[row][col] = " e- "
+			} else {
+				board[row][col] = cp.fullName()
+			}
+		}
+	}
+
+	player = cg.player
+	
+	for _, cp := range cg.wCaptured {
+		wCaptured = append(wCaptured, cp.fullName())
+	}
+
+	for _, cp := range cg.bCaptured {
+		bCaptured = append(bCaptured, cp.fullName())
+	}
+
+	return
+}
+
+func (cg *chessGame) cloneGame() (cgSim *chessGame, err error) {
+	cgSimBoard, cgSimPlayer, cgSimWCaptured, cgSimBCaptured := cg.unloadGame()
+	cgSim = initGame()
+	loadErr := cgSim.loadGame(cgSimBoard, cgSimPlayer, cgSimWCaptured, cgSimBCaptured)
+	if loadErr != nil {
+		err = loadErr
+		return
+	}
+
+	return
+}
+
 var visitedSquare = make(map[*square]bool)
 
-func (cg *chessGame) inCheck(moveTo *square) (error, chessPiece) { 
+func (cg *chessGame) inCheck(moveTo *square) (err error, cp chessPiece) { 
 	if visitedSquare[moveTo] {
-		return nil, nil
+		return
 	}
 	visitedSquare[moveTo] = true
 
 	for row := 0; row < 8; row++ {
 		for col := 0; col < 8; col++ {
-			moveFrom, err := cg.getSquare(row, col)
-			if err != nil {
-				fmt.Errorf("There was an error")
+			moveFrom, sqErr := cg.getSquare(row, col)
+			if sqErr != nil {
+				err = sqErr
+				return
 			}
 			if moveFrom.cp != nil && (moveFrom.cp.color() != cg.player) {
-				_, _, _, err := moveFrom.cp.isValidMove(moveTo, cg)
-				if err == nil {
-					err = fmt.Errorf("King will be in check!")
-					return err, moveFrom.cp
+				_, _, _, moveErr := moveFrom.cp.isValidMove(moveTo, cg)
+				if moveErr == nil {
+					err = newChessError(errInCheck, "King will be in check at (%d %d) by %s at (%d %d)", 
+						moveTo.row, moveTo.col, moveFrom.cp.fullName(), moveFrom.cp.getRow(), moveFrom.cp.getCol())
+					fmt.Println(err)
+					return
 				}
 			}
 		}
 	}
-	return nil, nil
+	return
 }
 
 func (cg *chessGame) getSquare(row, col int) (*square, error) {

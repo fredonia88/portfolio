@@ -61,6 +61,8 @@ type chessPiece interface {
 	fullName() string
 	name() string
 	color() string
+	getRow() int 
+	getCol() int
 	hasMoved() (bool, error)
 	updatePosition(newRow, newCol int)
 	isValidMove(to *square, cg *chessGame) (bool, bool, bool, error)
@@ -76,6 +78,14 @@ func (b *basePiece) name() string {
 
 func (b *basePiece) color() string {
 	return strings.Split(b.piece, "-")[1]
+}
+
+func (b *basePiece) getRow() int {
+	return b.row
+}
+
+func (b *basePiece) getCol() int {
+	return b.col
 }
 
 func (b *basePiece) hasMoved() (hasMoved bool, err error) {

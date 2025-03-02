@@ -5,14 +5,9 @@ import (
 )
 
 func main() {
-	// create vars and initialize board and game
-	var board [8][8]square
-	var player string
-	var wCaptured []chessPiece
-	var bCaptured []chessPiece
+	// initialize err var and game
 	var err error
-	
-	cg := &chessGame{board, player, wCaptured, bCaptured}
+	cg := initGame()
 
 	// parse vars from front end and load the game
 	mCreateNewGame := false
@@ -37,8 +32,8 @@ func main() {
 		{"rk-W-0", "kt-W-0", "bp-W-0", "qn-W-0", "kg-W-0", "bp-W-0", "kt-W-0", "rk-W-0"},
 	*/
 	mPlayer := "B" // User = W or Computer = B
-	mMoveFrom := []int{0, 0}
-	mMoveTo := []int{0, 4}
+	mMoveFrom := []int{0, 4}
+	mMoveTo := []int{0, 0}
 	mMoveFromPrior := [2]int{6, 0}
 	mMoveToPrior := [2]int{4, 0}
 	mWCaptured := []string{}
