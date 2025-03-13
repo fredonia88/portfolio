@@ -3,15 +3,15 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 /*
 	TODO:
-		1. Check for checkmate
-		2. Create an actual game in the console. 
-			a. Need a way to keep track of game state (potentially start writing to and from db)
-			b. Need a way for computer to make moves (can be random at first)
-		3. Need to build mini max algo for computer
+		1. Finish TODOs
+		2. Start writing game state to the database
+		1. Play an actual game
+		3. Build the mini max algo for computer moves
 */ 
 
 var verticalDistance int
@@ -38,9 +38,9 @@ func abs(x int) int {
 func (cg *chessGame) evalCastle(moveFromRow, moveFromCol, moveToCol int, moveFromFullName string) (err error) {
 
 	// collect all squares the king would start at, move through or end on while castling
-	squaresToEval := make([]*square, 0, 3)
+	squaresToEval := make([]*square, 0, 4)
 
-	endCol := 1
+	endCol := 0
 	colStep := -1
 	if moveFromCol == 7 || moveToCol == 7 { 
 		endCol = 7
@@ -67,51 +67,65 @@ func (cg *chessGame) evalCastle(moveFromRow, moveFromCol, moveToCol int, moveFro
 
 func (cg *chessGame) evalCastleSquares(squaresToEval []*square) (err error) {
 
+	// check that all squares are empty
+	for i, sq := range squaresToEval {
+		
+		// skip the King's square
+		if i == 0 {
+			continue
+		}
+		if sq.cp != nil {
+			err = newChessError(errCollision, "Castle will collide with %s at (%d %d)", sq.cp.fullName(), sq.row, sq.col)
+			return
+		}
+	}
+
+	// if castling left, remove the last square since the king doesn't move there
+	if len(squaresToEval) == 4 {
+		squaresToEval = squaresToEval[:3]
+	}
+
 	// create a simulated board
-	cgSim, err := cg.cloneGame()
+	cgSim, err := cg.cloneGame(false)
 	if err != nil {
 		return
 	}
-	
-	// vars to hold the king's row and col
-	kingRow := 0
-	if cg.player == "W" {
-		kingRow = 7
-	}
-	kingCol := 4
 
-	kingSq, kingSqErr := cgSim.getSquare(kingRow, kingCol); 
-	if kingSqErr != nil {
-		err = kingSqErr
+	// create kingRow and kingCol vars to move King back to original position
+	king, kingErr := cgSim.getKing()
+	if kingErr != nil {
+		err = kingErr
 		return
 	}
+	kingRow, kingCol := king.row, king.col
 
 	for i, sq := range squaresToEval {
 		if i == 0 {
-			if inCheckErr, _ := cgSim.inCheck(sq); inCheckErr != nil {
-				err = inCheckErr
+			err = cgSim.inCheck()
+			if err != nil {
 				return
 			}
 		} else {
-			kingSim, kingSimErr := cgSim.getSquare(sq.row, sq.col) 
-			if kingSimErr != nil {
-				err = kingSimErr
+			kingMoveTo, kingMoveToErr := cgSim.getSquare(sq.row, sq.col) 
+			if kingMoveToErr != nil {
+				err = kingMoveToErr
 				return
 			}
 			
-			kingSq.cp.updatePosition(sq.row, sq.col)
-			kingSim.cp = kingSq.cp
-			kingSq.cp = nil
+			// simulate moving the King
+			king.cp.updatePosition(sq.row, sq.col)
+			kingMoveTo.cp = king.cp
+			king.cp = nil
 
-			if inCheckErr, _ := cgSim.inCheck(kingSim); inCheckErr != nil {
-				err = inCheckErr
+			err = cgSim.inCheck()
+			if err != nil {
 				return
 			}
 
 			// move the king back
-			kingSim.cp.updatePosition(kingRow, kingCol)
-			kingSq.cp = kingSim.cp
-			kingSim.cp = nil
+			kingMoveTo.cp.updatePosition(kingRow, kingCol)
+			king.cp = kingMoveTo.cp
+			kingMoveTo.cp = nil
 		}
 	}
 	return
@@ -147,6 +161,8 @@ func (cg *chessGame) castle(moveFrom, moveTo *square) {
 
 	kgsq.cp = moveTo.cp
 	rksq.cp = moveFrom.cp
+	kgsq.cp.setHasMoved()
+	rksq.cp.setHasMoved()
 
 	moveFrom.cp, moveTo.cp = nil, nil
 }
@@ -161,6 +177,27 @@ func (cg *chessGame) capturePiece(moveTo *square) {
 	}
 }
 
+func (cg *chessGame) recoverLastCapturedPiece(moveTo *square) (err error) {
+
+	var captured []chessPiece
+	if cg.player == "W" {
+		captured = cg.bCaptured
+	} else {
+		captured = cg.wCaptured
+	}
+
+	if len(captured) == 0 {
+		err = newChessError(errNoCapturedPieces, "No captured pieces to recover")
+		return
+	}
+
+	moveTo.cp, captured = captured[len(captured)-1], captured[:len(captured)-1]
+	moveTo.cp.updatePosition(moveTo.row, moveTo.col)
+
+	return
+
+}
+
 func (cg *chessGame) promotePawn(moveTo *square) {
 
 	// will need a way to pause the game and have player select the new piece
@@ -170,10 +207,8 @@ func (cg *chessGame) promotePawn(moveTo *square) {
 	cg.board[moveTo.row][moveTo.col] = square{moveTo.row, moveTo.col, constructor(majorMinor[n] + "-" + moveTo.cp.color() + "-0", moveTo.row, moveTo.col)}
 }
 
-func (cg *chessGame) checkCollision(moveFromRow, moveFromCol, moveToRow, moveToCol int, moveFromFullName string) (doesCollide bool, err error) {
+func (cg *chessGame) checkCollision(moveFromRow, moveFromCol, moveToRow, moveToCol int, moveFromFullName string) (err error) {
 	
-	doesCollide = true
-
 	rowStep, colStep := 0, 0
 
 	if moveFromRow != moveToRow {
@@ -183,15 +218,23 @@ func (cg *chessGame) checkCollision(moveFromRow, moveFromCol, moveToRow, moveToC
 		colStep = (moveToCol - moveFromCol) / abs(moveToCol - moveFromCol)
 	}
 
-	for row, col := moveFromRow+rowStep, moveFromCol+colStep; row != moveToRow || col != moveToCol; row, col = row+rowStep, col+colStep {
-		if cg.board[row][col].cp != nil {
-			msg := fmt.Sprintf("%s collides at (%d, %d)", moveFromFullName, row, col)
+	for {
+		if moveFromRow != moveToRow {
+			moveFromRow += rowStep
+		}
+		if moveFromCol != moveToCol {
+			moveFromCol += colStep
+		}
+		if moveFromRow == moveToRow && moveFromCol == moveToCol {
+			break
+		}
+
+		if cg.board[moveFromRow][moveFromCol].cp != nil {
+			msg := fmt.Sprintf("%s collides at (%d, %d)", moveFromFullName, moveFromRow, moveFromCol)
 			err = fmt.Errorf(msg)
 			return
 		}
 	}
-
-	doesCollide = false
 
 	return
 }
@@ -242,13 +285,13 @@ func (cg *chessGame) makeMove(moveFrom, moveTo *square) (err error) {
 				cg.capturePiece(moveToPrior)
 				moveToPrior.cp = nil
 			} else if moveTo.cp != nil {
-				moveTo.cp.updatePosition(-1, -1)
 				cg.capturePiece(moveTo)
 			}
 			
 			// update the squares
 			moveTo.cp = moveFrom.cp
 			moveFrom.cp = nil
+			moveTo.cp.setHasMoved()
 			
 			// if promotePawn, then promote it
 			if promotePawn {
@@ -257,6 +300,61 @@ func (cg *chessGame) makeMove(moveFrom, moveTo *square) (err error) {
 		}
 	}
 
+	// update moveFromPrior and moveToPrior
+	moveFromPrior, moveToPrior = moveFrom, moveTo
+
+	return
+}
+
+func (cg *chessGame) makeComputerMove() (move []*square, err error) {
+	
+	// gather all spaces that are unoccupied or occupied by opponent to potentially move to
+	compMoves := make([][]*square, 0)
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			moveTo, moveToErr := cg.getSquare(row, col)
+			if moveToErr != nil {
+				err = moveToErr
+				return
+			}
+			if moveTo.cp == nil || (moveTo.cp != nil && moveTo.cp.color() != cg.player) {
+
+				// gather all comp occupied squares to potentially move from
+				for rowFrom := 0; rowFrom < 8; rowFrom++ {
+					for colFrom := 0; colFrom < 8; colFrom++ {
+						moveFrom, moveFromErr := cg.getSquare(rowFrom, colFrom)
+						if moveFromErr != nil {
+							err = moveFromErr
+							return
+						}
+
+						// TODO something is wrong with the logic here. Computer is trying to move white pieces
+						// this should also be a predefined slice, that will be faster
+						if moveFrom.cp != nil && moveFrom.cp.color() == cg.player {
+							_, _, _, err := moveFrom.cp.isValidMove(moveTo, cg)
+							if err == nil {
+								compMoves = append(compMoves, []*square{moveFrom, moveTo})
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if len(compMoves) < 1 {
+		err = newChessError(errNoValidCompMoves, "No valid comp moves found!")
+		return
+	} else {
+		rand.Seed(time.Now().UnixNano())
+		randIndex := rand.Intn(len(compMoves))
+		randMove := compMoves[randIndex]
+		err = cg.makeMove(randMove[0], randMove[1])
+		if err != nil {
+			handleError(err)
+		}
+	}
+	
 	return
 }
 
@@ -313,6 +411,12 @@ func (p *pawn) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePaw
 		return
 	}
 
+	// is the moveTo space occupied?
+	if moveTo.cp != nil {
+		err = newChessError(errOccupiedSquare, "Square (%d %d is occupied by %s. Choose a valid square to move to.",
+			moveTo.row, moveTo.col, moveTo.cp.fullName())
+	}
+
 	return
 }
 
@@ -328,30 +432,21 @@ func (r *rook) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePaw
 	}
 	
 	// check for collision
-	if doesCollide, collideErr := cg.checkCollision(r.row, r.col, moveTo.row, moveTo.col, r.fullName()); doesCollide {
-		err = collideErr 
+	err = cg.checkCollision(r.row, r.col, moveTo.row, moveTo.col, r.fullName()) 
+	if err != nil {
 		return
 	}
 
 	// check if castling
 	if isHorizontalOnly && moveTo.cp != nil && moveTo.cp.name() == "kg" && r.color() == moveTo.cp.color() {
 		
-		hasMovedKing, hasMovedKingErr := moveTo.cp.hasMoved()
-		if hasMovedKingErr != nil {
-			err = hasMovedKingErr
-			return
-		} 
-		if hasMovedKing {
-			err = newChessError(errInvalidMove, "King has previously moved, so rooks are ineligible to castle")
-			return
-		} 
-		hasMovedRook, hasMovedRookErr := r.hasMoved()
-		if hasMovedRookErr != nil {
-			err = hasMovedRookErr
+		err = moveTo.cp.getHasMoved()
+		if err != nil {
 			return
 		}
-		if hasMovedRook {
-			err = newChessError(errInvalidMove, "This rook has previously moved, so it is ineligible to castle")
+
+		err = r.getHasMoved()
+		if err != nil {
 			return
 		}
 		
@@ -378,7 +473,7 @@ func (k *knight) isValidMove(moveTo *square, cg *chessGame) (enPassant, promoteP
 	horizontalMove := abs(horizontalDistance)
 
 	// knight can only move 3 squares; 2 vertical and 1 lateral, or 1 vertical and 2 lateral
-	if !((verticalMove == 2 && horizontalDistance == 1) || (verticalMove == 1 && horizontalMove == 2)) {
+	if !((verticalMove == 2 && horizontalMove == 1) || (verticalMove == 1 && horizontalMove == 2)) {
 		err = newChessError(errInvalidMove, "Knights must move both vertically and horizontally, and a total of 3 squares")
 		return
 	}
@@ -401,8 +496,8 @@ func (b *bishop) isValidMove(moveTo *square, cg *chessGame) (enPassant, promoteP
 	}
 
 	// check for collision
-	if doesCollide, collideErr := cg.checkCollision(b.row, b.col, moveTo.row, moveTo.col, b.fullName()); doesCollide {
-		err = collideErr 
+	err = cg.checkCollision(b.row, b.col, moveTo.row, moveTo.col, b.fullName())
+	if err != nil {
 		return
 	}
 
@@ -425,8 +520,8 @@ func (q *queen) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePa
 	}
 
 	// check for collision
-	if doesCollide, collideErr := cg.checkCollision(q.row, q.col, moveTo.row, moveTo.col, q.fullName()); doesCollide {
-		err = collideErr 
+	err = cg.checkCollision(q.row, q.col, moveTo.row, moveTo.col, q.fullName())
+	if err != nil { 
 		return
 	}
 
@@ -439,24 +534,16 @@ func (k *king) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePaw
 	enPassant, promotePawn, canCastle = false, false, false
 	setChessMove(k.row, k.col, moveTo)
 
+	// check if the king can castle
 	if isHorizontalOnly && moveTo.cp != nil && moveTo.cp.name() == "rk" && k.color() == moveTo.cp.color() {
 
-		hasMovedRook, hasMovedRookErr := moveTo.cp.hasMoved()
-		if hasMovedRookErr != nil {
-			err = hasMovedRookErr
-			return
-		} 
-		if hasMovedRook {
-			err = newChessError(errInvalidMove, "This rook has previously moved, so it is ineligible to castle")
-			return
-		} 
-		hasMovedKing, hasMovedKingErr := k.hasMoved()
-		if hasMovedKingErr != nil {
-			err = hasMovedKingErr
+		err = moveTo.cp.getHasMoved()
+		if err != nil {
 			return
 		}
-		if hasMovedKing {
-			err = newChessError(errInvalidMove, "King has previously moved, so it is ineligible to castle")
+
+		err = k.getHasMoved()
+		if err != nil {
 			return
 		}
 		
@@ -470,8 +557,41 @@ func (k *king) isValidMove(moveTo *square, cg *chessGame) (enPassant, promotePaw
 		canCastle = true
 	} else {
 
-		if inCheckErr, _ := cg.inCheck(moveTo); inCheckErr != nil {
-			err = inCheckErr
+		// check for collision
+		err = cg.checkCollision(k.row, k.col, moveTo.row, moveTo.col, k.fullName())
+		if err != nil {
+			return
+		}
+
+		// clone the game
+		cgSim, cgSimErr := cg.cloneGame(false)
+		if cgSimErr != nil {
+			err = cgSimErr
+			return
+		}
+
+		// get the king's square
+		king, kingErr := cgSim.getKing()
+		if kingErr != nil {
+			err = kingErr
+			return
+		}
+
+		// get moveTo square from sim game
+		kingMoveTo, kingMoveToErr := cgSim.getSquare(moveTo.row, moveTo.col)
+		if kingMoveToErr != nil {
+			err = kingMoveToErr
+			return
+		}
+
+		// simulate moving the king
+		king.cp.updatePosition(moveTo.row, moveTo.col)
+		kingMoveTo.cp = king.cp
+		king.cp = nil
+
+		// if the king is in check, return the error
+		err = cgSim.inCheck()
+		if err != nil {
 			return
 		}
 

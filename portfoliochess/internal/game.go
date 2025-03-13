@@ -36,6 +36,7 @@ func initGame() *chessGame {
 }
 
 func (cg *chessGame) newGame() (err error) {
+	cg.player = "W"
 	majorMinor := []string{"rk","kt","bp","qn","kg","bp","kt","rk"}
 	for i := 0; i < 8; i++ {
 
@@ -56,9 +57,9 @@ func (cg *chessGame) newGame() (err error) {
 		cg.board[6][i] = square{6, i, pawnConstructor("pn-W-0", 6, i)}
 
 		cg.board[2][i] = square{2, i, nil}
-		cg.board[3][i] = square{2, i, nil}
-		cg.board[4][i] = square{2, i, nil}
-		cg.board[5][i] = square{2, i, nil}
+		cg.board[3][i] = square{3, i, nil}
+		cg.board[4][i] = square{4, i, nil}
+		cg.board[5][i] = square{5, i, nil}
 	}
 
 	return
@@ -134,7 +135,7 @@ func (cg *chessGame) unloadGame() (board [8][8]string, player string, wCaptured 
 	return
 }
 
-func (cg *chessGame) cloneGame() (cgSim *chessGame, err error) {
+func (cg *chessGame) cloneGame(changePlayer bool) (cgSim *chessGame, err error) {
 	cgSimBoard, cgSimPlayer, cgSimWCaptured, cgSimBCaptured := cg.unloadGame()
 	cgSim = initGame()
 	loadErr := cgSim.loadGame(cgSimBoard, cgSimPlayer, cgSimWCaptured, cgSimBCaptured)
@@ -142,17 +143,33 @@ func (cg *chessGame) cloneGame() (cgSim *chessGame, err error) {
 		err = loadErr
 		return
 	}
+	if changePlayer {
+		if cgSim.player == "W" {
+			cgSim.player = "B"
+		} else {
+			cgSim.player = "W"
+		}
+	}
 
 	return
 }
 
 var visitedSquare = make(map[*square]bool)
 
-func (cg *chessGame) inCheck(moveTo *square) (err error, cp chessPiece) { 
-	if visitedSquare[moveTo] {
+func (cg *chessGame) inCheck() (err error) {
+
+	// get the king square
+	king, kingErr := cg.getKing()
+	if kingErr != nil {
+		err = kingErr
 		return
 	}
-	visitedSquare[moveTo] = true
+
+	// denote if this square has been evaluated
+	if visitedSquare[king] {
+		return
+	} 
+	visitedSquare[king] = true
 
 	for row := 0; row < 8; row++ {
 		for col := 0; col < 8; col++ {
@@ -161,17 +178,160 @@ func (cg *chessGame) inCheck(moveTo *square) (err error, cp chessPiece) {
 				err = sqErr
 				return
 			}
-			if moveFrom.cp != nil && (moveFrom.cp.color() != cg.player) {
-				_, _, _, moveErr := moveFrom.cp.isValidMove(moveTo, cg)
+			if moveFrom.cp != nil && moveFrom.cp.color() != cg.player {
+				_, _, _, moveErr := moveFrom.cp.isValidMove(king, cg)
 				if moveErr == nil {
 					err = newChessError(errInCheck, "King will be in check at (%d %d) by %s at (%d %d)", 
-						moveTo.row, moveTo.col, moveFrom.cp.fullName(), moveFrom.cp.getRow(), moveFrom.cp.getCol())
-					fmt.Println(err)
+						king.row, king.col, moveFrom.cp.fullName(), moveFrom.cp.getRow(), moveFrom.cp.getCol())
 					return
 				}
 			}
 		}
 	}
+	return
+}
+
+func (cg *chessGame) checkMate() (err error) {
+	
+	// clone the game
+	cgSim, simErr := cg.cloneGame(true)
+	if simErr != nil {
+		err = simErr
+		return
+	}
+
+	// is the king in check? if not, no need to check for check mate
+	err = cgSim.inCheck()
+	if err == nil {
+		return
+	}
+
+	// set new king square for simulated game
+	king, kingErr := cgSim.getKing()
+	if kingErr != nil {
+		err = kingErr
+		return 
+	}
+		
+	// check if king can move to a square that is not in check
+	for row := king.row - 1; row <= king.row + 1; row++ {
+		for col := king.col - 1; col <= king.col + 1; col++ {
+			if row < 0 || row > 7 || col < 0 || col > 7 {
+				continue
+			}
+			moveTo, sqErr := cgSim.getSquare(row, col)
+			if sqErr != nil {
+				err = sqErr
+				return
+			}
+			if moveTo.cp == nil || (moveTo.cp != nil && moveTo.cp.color() != cgSim.player) {
+				
+				// simulate moving the king to that position
+				king.cp.updatePosition(moveTo.row, moveTo.col)
+				var pieceCaptured bool 
+				if moveTo.cp != nil {
+					cgSim.capturePiece(moveTo)
+					pieceCaptured = true
+				}
+				moveTo.cp = king.cp
+				king.cp = nil
+				
+				// exit if king is not in check
+				err = cgSim.inCheck()
+				if err == nil {
+
+					// undo the move 
+					king.cp = moveTo.cp
+					king.cp.updatePosition(king.row, king.col)
+					moveTo.cp = nil
+					if pieceCaptured {
+						cgSim.recoverLastCapturedPiece(moveTo)
+					}
+					return
+				}
+
+				// undo the move 
+				king.cp = moveTo.cp
+				king.cp.updatePosition(king.row, king.col)
+				moveTo.cp = nil
+				if pieceCaptured {
+					cgSim.recoverLastCapturedPiece(moveTo)
+
+				}
+			}
+		}
+	}
+
+	// loop through each piece and check if it can move to a square that will block the check
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			moveFrom, sqErr := cgSim.getSquare(row, col)
+			if sqErr != nil {
+				err = sqErr
+				return
+			}
+			if moveFrom.cp != nil && moveFrom.cp.name() != "kg" && moveFrom.cp.color() == cgSim.player {
+				for rowTo := 0; rowTo < 8; rowTo++ {
+					for colTo := 0; colTo < 8; colTo++ {
+						moveTo, sqErr := cgSim.getSquare(rowTo, colTo)
+						if sqErr != nil {
+							err = sqErr
+							return
+						}
+						if moveTo.cp == nil || (moveTo.cp != nil && moveTo.cp.color() != cgSim.player) {
+							_, _, _, err = moveFrom.cp.isValidMove(moveTo, cgSim)
+							if err == nil {
+
+								// simulate moving the piece
+								moveFrom.cp.updatePosition(rowTo, colTo)
+								var pieceCaptured bool
+								if moveTo.cp != nil {
+									cgSim.capturePiece(moveTo)
+									pieceCaptured = true
+								}
+								moveTo.cp = moveFrom.cp
+								moveFrom.cp = nil
+
+								// check if king is in check, and clear the visited variable
+								visitedSquare = make(map[*square]bool)
+								err = cgSim.inCheck()
+								if err == nil {
+									return
+								}
+
+								// undo the move
+								moveFrom.cp = moveTo.cp
+								moveFrom.cp.updatePosition(row, col)
+								moveTo.cp = nil
+								if pieceCaptured {
+									cgSim.recoverLastCapturedPiece(moveTo)
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	err = newChessError(errCheckMate, "Checkmate! %s wins!", cg.player)
+	return
+}
+
+func (cg *chessGame) getKing() (king *square, err error) {
+	for row := 0; row < 8; row++ {
+		for col := 0; col < 8; col++ {
+			sq, sqErr := cg.getSquare(row, col)
+			if sqErr != nil {
+				err = sqErr
+				return
+			}
+			if sq.cp != nil && sq.cp.name() == "kg" && sq.cp.color() == cg.player {
+				king = sq
+				return
+			}
+		}
+	}
+	err = newChessError(errKingNotFound, "King not found")
 	return
 }
 

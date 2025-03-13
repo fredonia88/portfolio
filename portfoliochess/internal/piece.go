@@ -63,7 +63,8 @@ type chessPiece interface {
 	color() string
 	getRow() int 
 	getCol() int
-	hasMoved() (bool, error)
+	getHasMoved() (error)
+	setHasMoved()
 	updatePosition(newRow, newCol int)
 	isValidMove(to *square, cg *chessGame) (bool, bool, bool, error)
 }
@@ -88,13 +89,20 @@ func (b *basePiece) getCol() int {
 	return b.col
 }
 
-func (b *basePiece) hasMoved() (hasMoved bool, err error) {
+func (b *basePiece) getHasMoved() (err error) {
 	boolStr := strings.Split(b.piece, "-")[2]
-	hasMoved, err = strconv.ParseBool(boolStr)
+	hasMoved, err := strconv.ParseBool(boolStr)
 	if err != nil {
 		err = newChessError(errHasMovedConversion, "Error converting '%s' to bool: %v\n", boolStr, err)
 	}
+	if hasMoved {
+		err = newChessError(errHasMoved, "%d has already moved and is ineligible to castle", b.fullName())
+	}
 	return
+}
+
+func (b *basePiece) setHasMoved() {
+	b.piece = b.piece[:len(b.piece)-1] + "1"
 }
 
 func (b *basePiece) updatePosition(newRow, newCol int) {
