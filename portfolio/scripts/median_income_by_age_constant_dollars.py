@@ -23,7 +23,7 @@ LEU0252891500 -- 65 years and over, use
 
 # pull data from the api, create a df from each body and add to the dfs list
 start = 1979
-end = 2023
+end = 2024
 dfs = []
 for i in range(start, end, 20):
     url = 'https://api.bls.gov/publicAPI/v2/timeseries/data/'
