@@ -19,3 +19,6 @@ jupyternotebooks/
 .portfolio
 .nginx
 scripts/data/
+venvs
+notebooks
+files

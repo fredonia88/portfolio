@@ -7,7 +7,7 @@ python manage.py migrate
 
 # run ETL scripts
 echo Running ETL scripts...
-python scripts/cpi_index_by_year.py
+python scripts/cpi_index_by_year.py --write-db
 python scripts/median_income_by_age_constant_dollars.py
 
 # start gunicorn server
