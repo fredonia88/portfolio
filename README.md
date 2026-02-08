@@ -59,17 +59,23 @@ With the database running and the secrets in place, you should be able to run th
  
  ## How to run locally in docker
  
-With `_prod.env` configured, run `bash deploy/deploy-django-secrets.sh --build=create` to parse the `_prod.env` file and add its contents to an AWS secret. This secret will be used in production.
+With secrets in `_staging.env` configured, run:
+ - `source get_secrets.sh --env=dev`
 
-Pull down the secrets you just added to AWS and set as env vars: 
- - `source get_secrets.sh --env=prod`
-
-Lastly, run the below to build the image and compose up: 
+Then run the below to build the image and compose up: 
 
  - `docker compose build --no-cache`
  - `docker compose up`
 
 ## How to deploy to AWS
+
+Comment out the mounted aws credentials in docker-compose.yml:
+- ~/.aws:/root/.aws:ro
+
+Run `bash deploy/deploy-django-secrets.sh --build=create` to parse the `_staging.env` file and add its contents to the AWS secret. This secret will be used in production.
+
+Pull down the secrets you just added to AWS and set as env vars: 
+ - `source get_secrets.sh --env=prod`
 
 Run all the scripts in the deploy folder to create the S3 bucket, secrets for the git keys for the EC2 instance (add the secret values manually), the project's secrets (which you should've already done), the Route53 hosted zone for the domains and finally the script to deploy the project's stack (EC2, Load Balancer, Listeners, Security Groups, Target Group, SSL Certificates, etc).
 

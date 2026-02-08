@@ -8,7 +8,7 @@ exit_with_error() {
 
 # check if 'env' argument is provided
 if ! [[ "$@" =~ "--env=" ]]; then
-    exit_with_error "Error: '--env=prod|dev' argument is required."
+    exit_with_error "Error: '--env=prod|staging|dev' argument is required."
 fi
 
 # parse the arguments
@@ -19,14 +19,14 @@ while [[ $# -gt 0 ]]; do
             shift
             ;;
         *)
-            exit_with_error "Error: Invalid argument: $1. Valid options are: '--env=prod|dev'"
+            exit_with_error "Error: Invalid argument: $1. Valid options are: '--env=prod|staging|dev'"
             ;;
     esac
 done
 
 # validate the value of env
-if [[ "$env" != "prod" && "$env" != "dev" ]]; then
-    exit_with_error "Error: Invalid 'env' value. Allowed values: prod|dev"
+if [[ "$env" != "prod" && "$env" != "dev" && "$env" != "staging" ]]; then
+    exit_with_error "Error: Invalid 'env' value. Allowed values: prod|staging|dev"
 fi
 
 export DJANGO_ENV=$env
@@ -34,6 +34,10 @@ export DJANGO_ENV=$env
 if [[ "$env" = "dev" ]]; then
     set -a # ensure variables in ._dev.env are automatically exported
     source portfolio/_dev.env
+    set +a
+elif [[ "$env" = "staging" ]]; then
+    set -a # ensure variables in ._dev_docker.env are automatically exported
+    source portfolio/_staging.env
     set +a
 else
     SECRET_VALUE=$(aws secretsmanager get-secret-value --secret-id fred-portfolio-django --query SecretString --output text)

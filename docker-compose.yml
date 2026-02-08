@@ -8,6 +8,7 @@ services:
     container_name: webserver
     volumes:
       - static_data:/opt/django/portfolio/static
+      # - ~/.aws:/root/.aws:ro
     expose:
       - "8000"
     ports:
@@ -48,8 +49,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     healthcheck:
-      #test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5

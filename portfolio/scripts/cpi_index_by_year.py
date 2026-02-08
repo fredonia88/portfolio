@@ -19,6 +19,7 @@ import polars as pl
 import os
 import argparse
 import boto3
+from io import BytesIO
 
 
 def process_data() -> pl.DataFrame:
@@ -62,10 +63,8 @@ def write_to_db() -> None:
     """Read CSV from S3 and write to Postgres."""
 
     s3 = boto3.client('s3')
-    csv_path = 'files/cpi_index_by_year.csv'
-    s3.download_file('fred-portfolio', 'data/cpi_index_by_year.csv', csv_path)
-
-    df = pl.read_csv(csv_path)
+    obj = s3.get_object(Bucket='fred-portfolio', Key='data/cpi_index_by_year.csv')
+    df = pl.read_csv(BytesIO(obj['Body'].read()))
 
     postgres = Postgres(
         username=os.getenv('POSTGRES_USER'),
